@@ -1,7 +1,6 @@
 # Domain 1 Capstone — Customer Support Agent
 
-Companion build for the Claude Architect (Foundations) Domain 1 syllabus.
-Also source material for *Claude Code for Non-Coders*.
+Companion build for the Claude Architect (Foundations) Domain 1 syllabus.*.
 
 ---
 
@@ -209,22 +208,3 @@ Per-concept guides:
 - `verification/test_loop_demo.md`
 - `verification/test_audit_decomposition.md`
 - `verification/test_session_resumption.md`
-
----
-
-## Substack notes
-
-**Hook — the date chaos post:**
-*"I asked Claude to look up a customer's recent orders. Behind the scenes, the data came back in three completely different date formats. Claude never saw any of them."*
-
-**Hook — the loop demo post:**
-*"Claude Code runs a loop for you automatically. Here's what it looks like when you write it yourself — and three ways it goes wrong."*
-
-**Hook — the refund gate post:**
-*"I asked Claude to bypass its own policy. It tried. A hook stopped it anyway."*
-
-**Hook — the audit decomposition post:**
-*"I asked Claude to audit three customers' refund patterns in one prompt. It found five of the eight patterns I'd planted. Split into three focused passes, it found all eight — plus a cross-customer pattern I hadn't even flagged."*
-
-**Hook — the session state post:**
-*"I started a refund investigation, stepped away for an hour, and came back to a different terminal window. Claude picked up exactly where we left off, March refund cluster and all."*
