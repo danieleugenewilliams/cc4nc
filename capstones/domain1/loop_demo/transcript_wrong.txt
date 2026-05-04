@@ -1,0 +1,31 @@
+Prompt: Has CUST-03 placed any orders over $1,000? If so, what was the most recent one and what was the order date?
+
+Running 3 anti-pattern variants. Compare with loop_demo.py output.
+
+
+============================================================
+ANTI-PATTERN: content[0].type == 'text' check
+============================================================
+stop_reason was: tool_use
+content blocks: ['text', 'tool_use']
+EXIT: saw a text block — assuming Claude is done.
+(The tool_use block that followed was never executed.)
+
+============================================================
+ANTI-PATTERN: hard-coded iteration cap (MAX=2)
+============================================================
+  iteration 1, stop_reason: tool_use
+  iteration 2, stop_reason: end_turn
+EXIT: hit iteration cap (2). Task may be incomplete.
+      (stop_reason on last response was: end_turn )
+
+============================================================
+ANTI-PATTERN: any text block = done check
+============================================================
+  iteration 1, stop_reason: tool_use, has text: True
+EXIT: found a text block — assuming Claude is done.
+      (tool_use blocks in the same response were ignored.)
+
+
+All three anti-patterns demonstrated.
+Run loop_demo.py to see the correct behaviour on the same prompt.
