@@ -1,6 +1,6 @@
 # Claude Code for Non-Coders
 
-Companion code for [Claude Code for Non-Coders](https://claudecodefornoncoders.substack.com/) — Daniel Williams' newsletter on using coding agents effectively without losing the judgment that makes you valuable.
+Companion code for [Claude Code for Non-Coders](https://claudecodefornoncoders.substack.com/) - Daniel Williams' newsletter on using coding agents effectively without losing the judgment that makes you valuable.
 
 This repo holds the runnable builds referenced in the published articles.
 

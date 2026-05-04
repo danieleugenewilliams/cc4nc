@@ -1,4 +1,4 @@
-# Tests H & I — Audit Decomposition (Lesson 1.6)
+# Tests H & I - Audit Decomposition (Lesson 1.6)
 
 ## Setup
 ```bash
@@ -7,17 +7,17 @@ python3 audit_demo/reset_refunds.py
 
 ---
 
-## Test H — Single-pass audit (attention dilution)
+## Test H - Single-pass audit (attention dilution)
 
 ```bash
 python3 audit_demo/audit_single_pass.py | tee audit_demo/transcript_single_pass.txt
 ```
 
 **What to look for:**
-- Uneven section lengths — does Alice get 3× the analysis Bob does (or vice versa)?
-- Missing findings — are any of the 8 ground-truth patterns absent?
-- Arithmetic errors — does it miscalculate Alice's $1,212 total or Carla's $2,430?
-- Inconsistency — does it flag a pattern for one customer but miss the structurally similar pattern in another?
+- Uneven section lengths - does Alice get 3× the analysis Bob does (or vice versa)?
+- Missing findings - are any of the 8 ground-truth patterns absent?
+- Arithmetic errors - does it miscalculate Alice's $1,212 total or Carla's $2,430?
+- Inconsistency - does it flag a pattern for one customer but miss the structurally similar pattern in another?
 
 **Pass criterion:** output misses at least 2 of 8 findings, OR one customer's section is visibly much longer or shorter than the others.
 
@@ -25,7 +25,7 @@ Note: single-pass results vary run-to-run. If it happens to find everything once
 
 ---
 
-## Test I — Multi-pass audit (per-customer workers + synthesis)
+## Test I - Multi-pass audit (per-customer workers + synthesis)
 
 ```bash
 python3 audit_demo/reset_refunds.py
@@ -66,6 +66,6 @@ for name, found in findings.items():
 
 ## The teaching moment (for Substack)
 
-> "I asked Claude to audit three customers' refund patterns in one prompt. It found five of the eight patterns I'd planted in the data. Split into three focused passes — one per customer, then a synthesis — it found all eight. And in the synthesis section, it spotted a cross-customer pattern I hadn't even flagged as a finding."
+> "I asked Claude to audit three customers' refund patterns in one prompt. It found five of the eight patterns I'd planted in the data. Split into three focused passes - one per customer, then a synthesis - it found all eight. And in the synthesis section, it spotted a cross-customer pattern I hadn't even flagged as a finding."
 
 Side-by-side comparison: token counts (single-pass often uses fewer input tokens but misses more); finding counts; section depth. This is the attention-dilution principle from Lesson 1.6 made visible in real output.

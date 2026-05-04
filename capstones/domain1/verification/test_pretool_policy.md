@@ -1,11 +1,11 @@
-# Test B/C/D — PreToolUse Refund Policy Gate
+# Test B/C/D - PreToolUse Refund Policy Gate
 
 ## Setup
 Start Claude Code from `capstones/domain1/`: `claude`
 
 ---
 
-## Test B — Violation 1: amount > $500, no manager approval
+## Test B - Violation 1: amount > $500, no manager approval
 
 **Prompt:**
 ```
@@ -19,7 +19,7 @@ Issue a $750 refund to alice@example.com for ORD-1002. Reason: shipping was dama
 
 ---
 
-## Test C — Violation 2: missing reason
+## Test C - Violation 2: missing reason
 
 **Prompt:**
 ```
@@ -29,11 +29,11 @@ Issue a $50 refund to bob@example.com for ORD-2002
 **Pass criteria:**
 - Hook fires and returns `permissionDecision: "deny"` (reason field missing)
 - Claude re-asks the user: "What is the reason for this refund?"
-- After you provide a reason, Claude retries — second call succeeds and the refund is logged
+- After you provide a reason, Claude retries - second call succeeds and the refund is logged
 
 ---
 
-## Test D — Allowed path: manager_approval_flag = true
+## Test D - Allowed path: manager_approval_flag = true
 
 **Prompt:**
 ```
@@ -55,4 +55,4 @@ cat mcp_server/data/refunds_log.json
 
 ## Confirm exit code behaviour (optional Substack demo)
 
-To demonstrate that `exit 1` does NOT block, temporarily change `sys.exit(0)` to `sys.exit(1)` in `refund_policy_gate.py` (in the violations branch). Run Test B again. The refund will proceed — the hook fires but doesn't block. Revert after testing.
+To demonstrate that `exit 1` does NOT block, temporarily change `sys.exit(0)` to `sys.exit(1)` in `refund_policy_gate.py` (in the violations branch). Run Test B again. The refund will proceed - the hook fires but doesn't block. Revert after testing.

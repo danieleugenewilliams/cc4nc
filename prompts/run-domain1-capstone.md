@@ -4,21 +4,21 @@ This file is a prompt. Copy everything below the divider and paste it into a fre
 
 ---
 
-You are guiding me through the Claude Code for Non-Coders Domain 1 capstone. I just finished reading the article *"Stop Prompt-Engineering Your Way to Reliable Agents. Wire the Architecture Around It."* and I want to run the demos.
+You are guiding me through the Claude Code for Non-Coders Domain 1 capstone. I just finished reading the article *"You Can't Prompt-Engineer Your Way to Reliable Agents. Wire the Architecture Around It."* and I want to run the demos.
 
 Work through the steps below in order. After each command, narrate what just happened in plain English. Pause only at the explicit `PAUSE` markers.
 
-## Step 1 — Verify prerequisites
+## Step 1 - Verify prerequisites
 
 Check that `git`, `python3`, and `pip3` are available on my system.
 
-Most of this walkthrough works with just Claude Code installed — no separate API key is needed for the agent demos (Parts 7A and 7B). The loop demo in Step 6 is the exception: it calls the Anthropic API directly to expose the internal loop that Claude Code normally hides. That's intentional — you need raw access to see the raw mechanics.
+Most of this walkthrough works with just Claude Code installed - no separate API key is needed for the agent demos (Parts 7A and 7B). The loop demo in Step 6 is the exception: it calls the Anthropic API directly to expose the internal loop that Claude Code normally hides. That's intentional - you need raw access to see the raw mechanics.
 
-Check whether `ANTHROPIC_API_KEY` is set. If it is, we can run everything including the loop demo. If it isn't, note that and we will skip Step 6 for now — the subscriber can set up an API key at https://console.anthropic.com/ when they're ready to go deeper.
+Check whether `ANTHROPIC_API_KEY` is set. If it is, we can run everything including the loop demo. If it isn't, note that and we will skip Step 6 for now - the subscriber can set up an API key at https://console.anthropic.com/ when they're ready to go deeper.
 
 Do not stop if the API key is missing. Just note it and continue.
 
-## Step 2 — Clone the repo
+## Step 2 - Clone the repo
 
 If `~/cc4nc-capstone` does not already exist:
 
@@ -28,11 +28,11 @@ git clone https://github.com/danieleugenewilliams/cc4nc.git ~/cc4nc-capstone
 
 If it does exist, run `git -C ~/cc4nc-capstone pull` to update it.
 
-## Step 3 — Read the architecture
+## Step 3 - Read the architecture
 
 Read `~/cc4nc-capstone/capstones/domain1/README.md` so you have the full architecture context. Do not summarize it back to me. I've already read the article.
 
-## Step 4 — Install dependencies
+## Step 4 - Install dependencies
 
 ```
 pip3 install mcp anthropic
@@ -40,7 +40,7 @@ pip3 install mcp anthropic
 
 If pip complains about externally-managed environments, append `--break-system-packages` and try again.
 
-## Step 5 — Seed the refund log
+## Step 5 - Seed the refund log
 
 ```
 cd ~/cc4nc-capstone/capstones/domain1 && python3 audit_demo/reset_refunds.py
@@ -48,9 +48,9 @@ cd ~/cc4nc-capstone/capstones/domain1 && python3 audit_demo/reset_refunds.py
 
 This copies seed data into `mcp_server/data/refunds_log.json` so the demos start from a known state.
 
-## Step 6 — The loop you don't see
+## Step 6 - The loop you don't see
 
-**Skip this step if `ANTHROPIC_API_KEY` is not set.** The loop demo calls the API directly — that's the whole point. Claude Code normally runs this loop for you invisibly; these scripts expose it by bypassing the harness. Without a standalone key, the agent demos in Step 7 still work fine.
+**Skip this step if `ANTHROPIC_API_KEY` is not set.** The loop demo calls the API directly - that's the whole point. Claude Code normally runs this loop for you invisibly; these scripts expose it by bypassing the harness. Without a standalone key, the agent demos in Step 7 still work fine.
 
 If the key is set, install the Python SDK and run:
 
@@ -62,7 +62,7 @@ python3 loop_demo/loop_demo.py
 After it finishes, narrate:
 
 - The `--- stop_reason: tool_use ---` and `--- stop_reason: end_turn ---` markers in the trace
-- Why `stop_reason == "end_turn"` is the only reliable termination signal — not the presence of text, not a fixed turn count
+- Why `stop_reason == "end_turn"` is the only reliable termination signal - not the presence of text, not a fixed turn count
 - That the loop ran 2 iterations and produced a correct answer
 
 Then run the wrong version:
@@ -83,7 +83,7 @@ Stop here. Ask me which demo to run next:
 
 Wait for my answer.
 
-## Step 7A — Data normalization (PostToolUse hook)
+## Step 7A - Data normalization (PostToolUse hook)
 
 Read `mcp_server/data/orders.json`. Show me three orders that demonstrate the three different date formats: a Unix epoch integer, a `MM/DD/YYYY` string, and an ISO 8601 string. Point out which is which.
 
@@ -98,7 +98,7 @@ When I report back what the agent said, narrate:
 - The PostToolUse hook in `hooks/normalize_dates.py` did the conversion before the model ever saw the result
 - This hook uses `updatedMCPToolOutput` (replace) rather than `additionalContext` (append) because there's no value in the model seeing both formats
 
-## Step 7B — Refund policy gate (PreToolUse hook)
+## Step 7B - Refund policy gate (PreToolUse hook)
 
 Tell me to ask the support agent (in the fresh session at `~/cc4nc-capstone/capstones/domain1/`):
 
@@ -124,7 +124,7 @@ When the chosen demo(s) finish, briefly summarize what we walked through and rem
 
 If I want to explore further, point me to:
 
-- `audit_demo/` — multi-pass decomposition for cross-customer audits (Lesson 1.6)
-- `session_demo/` — three patterns for resuming work across sessions (Lesson 1.7)
+- `audit_demo/` - multi-pass decomposition for cross-customer audits (Lesson 1.6)
+- `session_demo/` - three patterns for resuming work across sessions (Lesson 1.7)
 
 These get covered in the off-cycle follow-up article.

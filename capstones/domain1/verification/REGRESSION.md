@@ -1,4 +1,4 @@
-# Regression Test Matrix — Domain 1 Capstone
+# Regression Test Matrix - Domain 1 Capstone
 
 Run all tests after any change to MCP server, data files, hooks, or agents.
 Run the full A–L sequence before any Substack publication.
@@ -15,23 +15,23 @@ Without this reset, refunds from a prior test pollute the next one.
 
 ---
 
-## Tests A–G — Existing (Claude Code)
+## Tests A–G - Existing (Claude Code)
 
 Run these from `capstones/domain1/` with `claude` open.
 
 | Test | Prompt | Pass criterion |
 |---|---|---|
 | **A** PostToolUse normalisation | `Show me the last 3 orders for alice@example.com` | All dates in response are ISO 8601 or plain English. Raw `orders.json` still has mixed formats after the test. |
-| **B** PreToolUse — over threshold | `Issue a $750 refund to alice@example.com for ORD-1002. Reason: shipping was damaged.` | Hook fires and returns blocking error. Log unchanged at 9 seed entries. Claude escalates or asks for approval. |
-| **C** PreToolUse — missing reason | `Issue a $50 refund to bob@example.com for ORD-2002` (no reason) | Hook blocks. Claude re-asks for reason. Provide "changed mind" — second call succeeds and log gains ORD-2002 entry. |
-| **D** PreToolUse — allowed (Carla) | `Issue a $750 refund to carla@example.com for ORD-3001. Reason: defective product.` | Hook allows (Carla has `manager_approval_flag=true`). Log gains ORD-3001 entry **on top of the 9 seeded entries** (total: 10+). |
+| **B** PreToolUse - over threshold | `Issue a $750 refund to alice@example.com for ORD-1002. Reason: shipping was damaged.` | Hook fires and returns blocking error. Log unchanged at 9 seed entries. Claude escalates or asks for approval. |
+| **C** PreToolUse - missing reason | `Issue a $50 refund to bob@example.com for ORD-2002` (no reason) | Hook blocks. Claude re-asks for reason. Provide "changed mind" - second call succeeds and log gains ORD-2002 entry. |
+| **D** PreToolUse - allowed (Carla) | `Issue a $750 refund to carla@example.com for ORD-3001. Reason: defective product.` | Hook allows (Carla has `manager_approval_flag=true`). Log gains ORD-3001 entry **on top of the 9 seeded entries** (total: 10+). |
 | **E** Loop demo | `python3 loop_demo/loop_demo.py` | `stop_reason` trace ends in `end_turn`. Answer references **ORD-3001 / $1,200.00 / April 25, 2025**. |
 | **F** Loop anti-patterns | `python3 loop_demo/loop_demo_wrong.py` | Each of 3 variants fails in its documented way (premature exit, iteration cap, text-presence exit). None produces a correct final answer. |
 | **G** Hook composition | `List Carla's orders, then refund ORD-3003 for $510, reason: late delivery.` | PostToolUse normalises dates; PreToolUse allows refund (Carla has approval flag). Both hooks fire without interference. Log gains ORD-3003 entry. |
 
 ---
 
-## Tests H–I — Audit decomposition
+## Tests H–I - Audit decomposition
 
 Run from `capstones/domain1/` with seeded data.
 
@@ -43,14 +43,14 @@ Run from `capstones/domain1/` with seeded data.
 | **I** Multi-pass full coverage | `python3 audit_demo/audit_multipass.py` | All 8 ground-truth findings present in synthesised output. Synthesis section names at least one cross-customer observation not present in any single worker report. |
 
 **Ground-truth findings (8 total):**
-- F-A1: Alice — 4 refunds in a 7-day window (cluster, March 14–20)
-- F-A2: Alice — $1,212 total refunded
-- F-A3: Alice — 3 of 4 cluster refunds lacked manager approval
-- F-B1: Bob — 1 refund in 10 orders (~10% rate)
-- F-B2: Bob — no clustering or high-value pattern
-- F-C1: Carla — 40% refund rate (4/10 orders)
-- F-C2: Carla — all 4 refunds high-value, $2,430 total
-- F-C3: Carla — multiple different reasons across refunds
+- F-A1: Alice - 4 refunds in a 7-day window (cluster, March 14–20)
+- F-A2: Alice - $1,212 total refunded
+- F-A3: Alice - 3 of 4 cluster refunds lacked manager approval
+- F-B1: Bob - 1 refund in 10 orders (~10% rate)
+- F-B2: Bob - no clustering or high-value pattern
+- F-C1: Carla - 40% refund rate (4/10 orders)
+- F-C2: Carla - all 4 refunds high-value, $2,430 total
+- F-C3: Carla - multiple different reasons across refunds
 
 **Grep helper:**
 ```bash
@@ -76,7 +76,7 @@ for f, found in findings.items():
 
 ---
 
-## Tests J–K–L — Session state
+## Tests J–K–L - Session state
 
 Manual tests. Run from `capstones/domain1/`.
 

@@ -1,11 +1,11 @@
-# Tests J, K, L — Session State & Resumption (Lesson 1.7)
+# Tests J, K, L - Session State & Resumption (Lesson 1.7)
 
 All three tests use the same Alice / ORD-1002 investigation as the substrate.
 Reset the refund log before each scenario.
 
 ---
 
-## Test J — `--continue` resume (Scenario 1)
+## Test J - `--continue` resume (Scenario 1)
 
 Full walkthrough: `session_demo/scenario_1_continue.md`
 
@@ -19,11 +19,11 @@ Full walkthrough: `session_demo/scenario_1_continue.md`
 - `refunds_log.json` has 10+ entries (9 seed + 1 new ORD-1002)
 - Single session identity across both halves
 
-**Teaching moment:** Session 2 references the March cluster from Session 1's tool calls — Claude has the full prior context. No re-investigation needed. This is `--continue` as "picking up mid-sentence."
+**Teaching moment:** Session 2 references the March cluster from Session 1's tool calls - Claude has the full prior context. No re-investigation needed. This is `--continue` as "picking up mid-sentence."
 
 ---
 
-## Test K — `--fork-session` (Scenario 2)
+## Test K - `--fork-session` (Scenario 2)
 
 Full walkthrough: `session_demo/scenario_2_fork.md`
 
@@ -39,11 +39,11 @@ Full walkthrough: `session_demo/scenario_2_fork.md`
 - Parent unchanged
 - Approved fork: log has ORD-1002 entry; denied fork: log at 9 seed entries
 
-**Teaching moment:** the reset step between branches *is* the lesson. Both forks share `refunds_log.json`. Forks branch conversation, not filesystem. The claude --resume picker shows the three sessions grouped — parent with two children.
+**Teaching moment:** the reset step between branches *is* the lesson. Both forks share `refunds_log.json`. Forks branch conversation, not filesystem. The claude --resume picker shows the three sessions grouped - parent with two children.
 
 ---
 
-## Test L — Fresh start + summary injection (Scenario 3)
+## Test L - Fresh start + summary injection (Scenario 3)
 
 Full walkthrough: `session_demo/scenario_3_fresh_brief.md`
 
@@ -56,6 +56,6 @@ Full walkthrough: `session_demo/scenario_3_fresh_brief.md`
 - New session ID (unrelated to any prior session)
 - Claude issues refund via `issue_refund` with `manager_approved=true`
 - Log gains new ORD-1002 entry
-- Claude does NOT claim to remember a prior conversation — it has none
+- Claude does NOT claim to remember a prior conversation - it has none
 
-**Teaching moment:** compare the handoff brief (200 words) to a full session transcript (thousands of words). The brief carries everything that matters. This is "the doctor's handoff note" pattern — compressed signal, no noise. Recommended for cross-machine handoffs.
+**Teaching moment:** compare the handoff brief (200 words) to a full session transcript (thousands of words). The brief carries everything that matters. This is "the doctor's handoff note" pattern - compressed signal, no noise. Recommended for cross-machine handoffs.

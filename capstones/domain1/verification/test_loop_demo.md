@@ -1,4 +1,4 @@
-# Test E/F — Loop Demo (stop_reason handling)
+# Test E/F - Loop Demo (stop_reason handling)
 
 ## Setup
 From `capstones/domain1/`:
@@ -8,7 +8,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 
 ---
 
-## Test E — Correct loop
+## Test E - Correct loop
 
 ```bash
 python3 loop_demo/loop_demo.py
@@ -37,13 +37,13 @@ Yes, CUST-03 placed one order over $1,000: ORD-3001 for $1,200.00, ordered on Ap
 
 ---
 
-## Test F — Anti-pattern demos
+## Test F - Anti-pattern demos
 
 ```bash
 python3 loop_demo/loop_demo_wrong.py
 ```
 
-**Pass criteria — each variant fails in its documented way:**
+**Pass criteria - each variant fails in its documented way:**
 
 | Variant | Expected failure |
 |---------|-----------------|
