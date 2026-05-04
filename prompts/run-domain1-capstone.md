@@ -10,9 +10,13 @@ Work through the steps below in order. After each command, narrate what just hap
 
 ## Step 1 — Verify prerequisites
 
-Check that `git`, `python3`, and `pip3` are available on my system. Check that `ANTHROPIC_API_KEY` is set in my environment.
+Check that `git`, `python3`, and `pip3` are available on my system.
 
-If anything is missing, stop and tell me what to install or where to get an API key (https://console.anthropic.com/). Do not proceed.
+Most of this walkthrough works with just Claude Code installed — no separate API key is needed for the agent demos (Parts 7A and 7B). The loop demo in Step 6 is the exception: it calls the Anthropic API directly to expose the internal loop that Claude Code normally hides. That's intentional — you need raw access to see the raw mechanics.
+
+Check whether `ANTHROPIC_API_KEY` is set. If it is, we can run everything including the loop demo. If it isn't, note that and we will skip Step 6 for now — the subscriber can set up an API key at https://console.anthropic.com/ when they're ready to go deeper.
+
+Do not stop if the API key is missing. Just note it and continue.
 
 ## Step 2 — Clone the repo
 
@@ -46,16 +50,19 @@ This copies seed data into `mcp_server/data/refunds_log.json` so the demos start
 
 ## Step 6 — The loop you don't see
 
-From `~/cc4nc-capstone/capstones/domain1`:
+**Skip this step if `ANTHROPIC_API_KEY` is not set.** The loop demo calls the API directly — that's the whole point. Claude Code normally runs this loop for you invisibly; these scripts expose it by bypassing the harness. Without a standalone key, the agent demos in Step 7 still work fine.
+
+If the key is set, install the Python SDK and run:
 
 ```
+pip3 install mcp anthropic
 python3 loop_demo/loop_demo.py
 ```
 
 After it finishes, narrate:
 
 - The `--- stop_reason: tool_use ---` and `--- stop_reason: end_turn ---` markers in the trace
-- Why `stop_reason == "end_turn"` is the only reliable termination signal
+- Why `stop_reason == "end_turn"` is the only reliable termination signal — not the presence of text, not a fixed turn count
 - That the loop ran 2 iterations and produced a correct answer
 
 Then run the wrong version:
@@ -64,7 +71,7 @@ Then run the wrong version:
 python3 loop_demo/loop_demo_wrong.py
 ```
 
-Walk me through each of the three anti-patterns. Explain what each one breaks.
+Walk me through each of the three anti-patterns. Explain what each one breaks and why it produces a wrong or incomplete answer on the same input.
 
 ## PAUSE 1
 

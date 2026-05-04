@@ -51,17 +51,23 @@ session_demo/      — three resumption patterns: --continue, --fork, fresh+brie
 
 ## Setup
 
+**Most of the capstone works with just Claude Code installed** — no separate API key needed.
+
+```bash
+cd capstones/domain1
+python3 audit_demo/reset_refunds.py   # seed the refund log
+claude                                 # start Claude Code
+```
+
+**The loop demo is the exception.** `loop_demo.py` and `loop_demo_wrong.py` call the Anthropic API directly, bypassing Claude Code's harness. That's intentional — the whole point of those scripts is to expose the `stop_reason` loop that Claude Code normally hides. Showing it requires raw API access:
+
 ```bash
 pip3 install mcp anthropic
 export ANTHROPIC_API_KEY=sk-ant-...
-
-# Seed the refund log before first use
-cd capstones/domain1
-python3 audit_demo/reset_refunds.py
-
-# Start Claude Code (auto-loads .mcp.json and .claude/settings.json)
-claude
+python3 loop_demo/loop_demo.py
 ```
+
+If you use Claude Code via a claude.ai subscription and don't have a standalone API key, you can get one at [console.anthropic.com](https://console.anthropic.com). The loop demo is worth the extra step — it's what makes the `stop_reason` explanation concrete.
 
 **Seeded data:** the refund log ships with 9 pre-built entries across 3 customers — Alice has a suspicious 4-refund cluster in March 2025, Bob is clean, Carla has a high refund rate. The seed file lives at `mcp_server/data/refunds_log.seed.json`. Run `reset_refunds.py` before any test that mutates the log.
 
