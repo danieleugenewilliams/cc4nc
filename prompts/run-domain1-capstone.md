@@ -20,17 +20,17 @@ Do not stop if the API key is missing. Just note it and continue.
 
 ## Step 2 - Clone the repo
 
-If `~/cc4nc-capstone` does not already exist:
+If `cc4nc` does not already exist:
 
 ```
-git clone https://github.com/danieleugenewilliams/cc4nc.git ~/cc4nc-capstone
+git clone https://github.com/danieleugenewilliams/cc4nc.git cc4nc
 ```
 
-If it does exist, run `git -C ~/cc4nc-capstone pull` to update it.
+If it does exist, run `git -C cc4nc pull` to update it.
 
 ## Step 3 - Read the architecture
 
-Read `~/cc4nc-capstone/capstones/domain1/README.md` so you have the full architecture context. Do not summarize it back to me. I've already read the article.
+Read `cc4nc/capstones/domain1/README.md` so you have the full architecture context. Do not summarize it back to me. I've already read the article.
 
 ## Step 4 - Install dependencies
 
@@ -43,7 +43,7 @@ If pip complains about externally-managed environments, append `--break-system-p
 ## Step 5 - Seed the refund log
 
 ```
-cd ~/cc4nc-capstone/capstones/domain1 && python3 audit_demo/reset_refunds.py
+cd cc4nc/capstones/domain1 && python3 audit_demo/reset_refunds.py
 ```
 
 This copies seed data into `mcp_server/data/refunds_log.json` so the demos start from a known state.
@@ -87,7 +87,7 @@ Wait for my answer.
 
 Read `mcp_server/data/orders.json`. Show me three orders that demonstrate the three different date formats: a Unix epoch integer, a `MM/DD/YYYY` string, and an ISO 8601 string. Point out which is which.
 
-The next part requires the support agent, which only loads when Claude Code starts inside `~/cc4nc-capstone/capstones/domain1/`. Tell me to open a second Claude Code session in a new terminal at that directory. In that fresh session, I should ask the support agent:
+The next part requires the support agent, which only loads when Claude Code starts inside `cc4nc/capstones/domain1/`. Tell me to open a second Claude Code session in a new terminal at that directory. In that fresh session, I should ask the support agent:
 
 > Show me the last 3 orders for alice@example.com.
 
@@ -100,7 +100,7 @@ When I report back what the agent said, narrate:
 
 ## Step 7B - Refund policy gate (PreToolUse hook)
 
-Tell me to ask the support agent (in the fresh session at `~/cc4nc-capstone/capstones/domain1/`):
+Tell me to ask the support agent (in the fresh session at `cc4nc/capstones/domain1/`):
 
 > Issue a $750 refund to alice@example.com for ORD-1002. Reason: shipping was damaged.
 
