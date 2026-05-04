@@ -1,6 +1,6 @@
 # Domain 1 Capstone — Customer Support Agent
 
-Companion build for the Claude Architect (Foundations) Domain 1 syllabus..
+Companion build for the Claude Architect (Foundations) Domain 1 syllabus.
 
 ---
 
