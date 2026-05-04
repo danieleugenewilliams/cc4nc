@@ -1,0 +1,26 @@
+[
+  {
+    "customer_id": "CUST-01",
+    "name": "Alice Chen",
+    "email": "alice@example.com",
+    "plan_tier": "pro",
+    "manager_approval_flag": false,
+    "signup_date": "2024-08-01"
+  },
+  {
+    "customer_id": "CUST-02",
+    "name": "Bob Patel",
+    "email": "bob@example.com",
+    "plan_tier": "starter",
+    "manager_approval_flag": false,
+    "signup_date": "2025-01-15"
+  },
+  {
+    "customer_id": "CUST-03",
+    "name": "Carla Diaz",
+    "email": "carla@example.com",
+    "plan_tier": "enterprise",
+    "manager_approval_flag": true,
+    "signup_date": "2023-11-20"
+  }
+]

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Claude Code developer settings (personal, not shared)
+.claude/settings.local.json
+
+# Transcript captures (generated locally, not committed)
+loop_demo/transcript_correct.txt
+loop_demo/transcript_wrong.txt
+audit_demo/transcript_*.txt
+session_demo/*.session*.txt
+session_demo/*.parent.txt
+session_demo/*.approved.txt
+session_demo/*.denied.txt
+session_demo/*.transcript.txt

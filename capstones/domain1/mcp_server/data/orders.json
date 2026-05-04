@@ -1,0 +1,212 @@
+[
+  {
+    "order_id": "ORD-1001",
+    "customer_id": "CUST-01",
+    "amount_usd": 49.99,
+    "status": "shipped",
+    "ordered_at": 1714521600
+  },
+  {
+    "order_id": "ORD-1004",
+    "customer_id": "CUST-01",
+    "amount_usd": 75.00,
+    "status": "delivered",
+    "ordered_at": "2024-09-12T10:00:00Z"
+  },
+  {
+    "order_id": "ORD-1005",
+    "customer_id": "CUST-01",
+    "amount_usd": 120.00,
+    "status": "delivered",
+    "ordered_at": "2024-12-03T15:30:00Z"
+  },
+  {
+    "order_id": "ORD-1006",
+    "customer_id": "CUST-01",
+    "amount_usd": 220.00,
+    "status": "delivered",
+    "ordered_at": "01/22/2025"
+  },
+  {
+    "order_id": "ORD-1002",
+    "customer_id": "CUST-01",
+    "amount_usd": 612.00,
+    "status": "delivered",
+    "ordered_at": "03/15/2025"
+  },
+  {
+    "order_id": "ORD-1007",
+    "customer_id": "CUST-01",
+    "amount_usd": 188.00,
+    "status": "delivered",
+    "ordered_at": "03/17/2025"
+  },
+  {
+    "order_id": "ORD-1008",
+    "customer_id": "CUST-01",
+    "amount_usd": 95.00,
+    "status": "delivered",
+    "ordered_at": 1742342400
+  },
+  {
+    "order_id": "ORD-1009",
+    "customer_id": "CUST-01",
+    "amount_usd": 410.00,
+    "status": "delivered",
+    "ordered_at": "03/21/2025"
+  },
+  {
+    "order_id": "ORD-1003",
+    "customer_id": "CUST-01",
+    "amount_usd": 89.50,
+    "status": "delivered",
+    "ordered_at": "2025-04-02T14:22:00Z"
+  },
+  {
+    "order_id": "ORD-1010",
+    "customer_id": "CUST-01",
+    "amount_usd": 60.00,
+    "status": "shipped",
+    "ordered_at": "2025-04-20T08:00:00Z"
+  },
+  {
+    "order_id": "ORD-2006",
+    "customer_id": "CUST-02",
+    "amount_usd": 88.00,
+    "status": "delivered",
+    "ordered_at": 1709251200
+  },
+  {
+    "order_id": "ORD-2009",
+    "customer_id": "CUST-02",
+    "amount_usd": 145.00,
+    "status": "shipped",
+    "ordered_at": 1714003200
+  },
+  {
+    "order_id": "ORD-2001",
+    "customer_id": "CUST-02",
+    "amount_usd": 250.00,
+    "status": "delivered",
+    "ordered_at": 1712016000
+  },
+  {
+    "order_id": "ORD-2003",
+    "customer_id": "CUST-02",
+    "amount_usd": 39.00,
+    "status": "delivered",
+    "ordered_at": "2024-11-12T09:00:00Z"
+  },
+  {
+    "order_id": "ORD-2004",
+    "customer_id": "CUST-02",
+    "amount_usd": 110.00,
+    "status": "delivered",
+    "ordered_at": "12/05/2024"
+  },
+  {
+    "order_id": "ORD-2002",
+    "customer_id": "CUST-02",
+    "amount_usd": 75.00,
+    "status": "delivered",
+    "ordered_at": "01/30/2025"
+  },
+  {
+    "order_id": "ORD-2005",
+    "customer_id": "CUST-02",
+    "amount_usd": 425.00,
+    "status": "delivered",
+    "ordered_at": "2025-02-14T11:30:00Z"
+  },
+  {
+    "order_id": "ORD-2007",
+    "customer_id": "CUST-02",
+    "amount_usd": 199.00,
+    "status": "delivered",
+    "ordered_at": "03/22/2025"
+  },
+  {
+    "order_id": "ORD-2008",
+    "customer_id": "CUST-02",
+    "amount_usd": 64.50,
+    "status": "delivered",
+    "ordered_at": "2025-04-05T16:00:00Z"
+  },
+  {
+    "order_id": "ORD-2010",
+    "customer_id": "CUST-02",
+    "amount_usd": 80.00,
+    "status": "delivered",
+    "ordered_at": "04/18/2025"
+  },
+  {
+    "order_id": "ORD-3006",
+    "customer_id": "CUST-03",
+    "amount_usd": 305.00,
+    "status": "delivered",
+    "ordered_at": 1701907200
+  },
+  {
+    "order_id": "ORD-3004",
+    "customer_id": "CUST-03",
+    "amount_usd": 480.00,
+    "status": "delivered",
+    "ordered_at": "2024-08-05T10:00:00Z"
+  },
+  {
+    "order_id": "ORD-3002",
+    "customer_id": "CUST-03",
+    "amount_usd": 39.00,
+    "status": "shipped",
+    "ordered_at": 1715126400
+  },
+  {
+    "order_id": "ORD-3005",
+    "customer_id": "CUST-03",
+    "amount_usd": 690.00,
+    "status": "delivered",
+    "ordered_at": "10/14/2024"
+  },
+  {
+    "order_id": "ORD-3007",
+    "customer_id": "CUST-03",
+    "amount_usd": 540.00,
+    "status": "delivered",
+    "ordered_at": "2025-01-08T13:45:00Z"
+  },
+  {
+    "order_id": "ORD-3008",
+    "customer_id": "CUST-03",
+    "amount_usd": 720.00,
+    "status": "delivered",
+    "ordered_at": "03/03/2025"
+  },
+  {
+    "order_id": "ORD-3003",
+    "customer_id": "CUST-03",
+    "amount_usd": 510.00,
+    "status": "delivered",
+    "ordered_at": "04/10/2025"
+  },
+  {
+    "order_id": "ORD-3009",
+    "customer_id": "CUST-03",
+    "amount_usd": 215.00,
+    "status": "delivered",
+    "ordered_at": "2025-04-15T09:30:00Z"
+  },
+  {
+    "order_id": "ORD-3010",
+    "customer_id": "CUST-03",
+    "amount_usd": 140.00,
+    "status": "shipped",
+    "ordered_at": "04/22/2025"
+  },
+  {
+    "order_id": "ORD-3001",
+    "customer_id": "CUST-03",
+    "amount_usd": 1200.00,
+    "status": "delivered",
+    "ordered_at": "2025-04-25T09:00:00Z"
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "refund_id": "REF-ORD-1002-seed1",
+    "order_id": "ORD-1002",
+    "amount_usd": 612.00,
+    "reason": "shipping damaged",
+    "manager_approved": true,
+    "status": "approved",
+    "processed_at": "2025-03-14T11:02:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-1007-seed2",
+    "order_id": "ORD-1007",
+    "amount_usd": 188.00,
+    "reason": "wrong size",
+    "manager_approved": false,
+    "status": "approved",
+    "processed_at": "2025-03-17T15:40:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-1008-seed3",
+    "order_id": "ORD-1008",
+    "amount_usd": 95.00,
+    "reason": "changed mind",
+    "manager_approved": false,
+    "status": "approved",
+    "processed_at": "2025-03-19T09:18:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-1009-seed4",
+    "order_id": "ORD-1009",
+    "amount_usd": 317.00,
+    "reason": "partial refund — duplicate item",
+    "manager_approved": false,
+    "status": "approved",
+    "processed_at": "2025-03-20T18:55:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-2005-seed5",
+    "order_id": "ORD-2005",
+    "amount_usd": 425.00,
+    "reason": "defective on arrival",
+    "manager_approved": false,
+    "status": "approved",
+    "processed_at": "2025-02-20T14:00:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-3004-seed6",
+    "order_id": "ORD-3004",
+    "amount_usd": 480.00,
+    "reason": "not as described",
+    "manager_approved": false,
+    "status": "approved",
+    "processed_at": "2024-08-20T10:00:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-3005-seed7",
+    "order_id": "ORD-3005",
+    "amount_usd": 690.00,
+    "reason": "defective",
+    "manager_approved": true,
+    "status": "approved",
+    "processed_at": "2024-10-30T11:30:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-3007-seed8",
+    "order_id": "ORD-3007",
+    "amount_usd": 540.00,
+    "reason": "wrong item shipped",
+    "manager_approved": true,
+    "status": "approved",
+    "processed_at": "2025-01-15T09:00:00Z"
+  },
+  {
+    "refund_id": "REF-ORD-3008-seed9",
+    "order_id": "ORD-3008",
+    "amount_usd": 720.00,
+    "reason": "quality issue",
+    "manager_approved": true,
+    "status": "approved",
+    "processed_at": "2025-03-08T16:20:00Z"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__support-tools__issue_refund",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/refund_policy_gate.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__support-tools__get_order|mcp__support-tools__list_recent_orders",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/normalize_dates.py"
+          }
+        ]
+      }
+    ]
+  }
+}
