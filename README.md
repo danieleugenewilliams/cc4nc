@@ -1,55 +1,34 @@
 # Claude Code for Non-Coders
 
-Companion code for the [Claude Code for Non-Coders](https://claudecodefornoncoders.substack.com/) newsletter.
+Companion code for [Claude Code for Non-Coders](https://claudecodefornoncoders.substack.com/) — Daniel Williams' newsletter on using coding agents effectively without losing the judgment that makes you valuable.
 
-Each capstone is a working build that demonstrates the architectural concepts from the [Claude Certified Architect (Foundations)](https://www.anthropic.com) curriculum — written to be readable by anyone, not just engineers.
+This repo holds the runnable builds referenced in the published articles.
 
----
+## Capstones
 
-## Domain 1 Capstone — Customer Support Agent
+### Domain 1: Customer Support Agent
 
-Located in `capstones/domain1/`.
+A working customer support agent that handles refunds. Demonstrates the architectural pieces covered across Lessons 1.1 through 1.7:
 
-Demonstrates six concepts from Domain 1 (Agentic Architecture & Orchestration):
+- The `stop_reason` agentic loop (L1.1)
+- Multi-tool MCP server with five tools (L1.2 / L1.3 territory)
+- PostToolUse data normalization (L1.5)
+- PreToolUse policy enforcement (L1.4)
+- Multi-pass decomposition for cross-customer audits (L1.6)
+- Three patterns for session resumption (L1.7)
 
-| Concept | Where |
-|---------|-------|
-| `stop_reason`-driven agentic loop | `loop_demo/loop_demo.py` |
-| PostToolUse normalisation hook | `hooks/normalize_dates.py` |
-| PreToolUse policy gate hook | `hooks/refund_policy_gate.py` |
-| Multi-tool agent configuration | `.claude/agents/support-agent.md` |
-| Multi-pass task decomposition | `audit_demo/` |
-| Session state & resumption | `session_demo/` |
+See [`capstones/domain1/README.md`](capstones/domain1/README.md) for the full walkthrough.
 
-### Quick start
+## Quickstart
 
-```bash
-pip install mcp anthropic
-export ANTHROPIC_API_KEY=sk-ant-...
+If you have Claude Code installed, the fastest way to run the Domain 1 capstone is to copy [`prompts/run-domain1-capstone.md`](prompts/run-domain1-capstone.md) and paste it into Claude Code. Claude will clone the repo, install dependencies, and walk you through each demo.
 
-cd capstones/domain1
-python3 audit_demo/reset_refunds.py   # seed the refund log
-claude                                 # start Claude Code
-```
-
-### Run the loop demo (no Claude Code needed)
-
-```bash
-cd capstones/domain1
-python3 loop_demo/loop_demo.py        # correct stop_reason loop
-python3 loop_demo/loop_demo_wrong.py  # three anti-patterns
-```
-
-See `capstones/domain1/README.md` for the full walkthrough.
-
----
-
-## Newsletter
-
-[claudecodefornoncoders.substack.com](https://claudecodefornoncoders.substack.com/)
-
----
+For manual setup, see the capstone README.
 
 ## License
 
-MIT — copy, modify, and use freely.
+MIT. See [`LICENSE`](LICENSE).
+
+---
+
+Daniel Williams advises clients about AI tools, strategy, and human resilience at [automationresilience.com](https://automationresilience.com).
