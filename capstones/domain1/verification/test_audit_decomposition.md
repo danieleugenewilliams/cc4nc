@@ -41,6 +41,10 @@ python3 audit_demo/audit_multipass.py | tee audit_demo/transcript_multipass.txt
 **Pass criterion:** all 8 findings present; synthesis contains cross-customer insight.
 
 **Automated finding check:**
+
+Note: keywords for F-B2 and F-C3 were extended for claude-sonnet-4-6 phrasing.
+If switching models, re-run and check for MISSING findings before updating keywords.
+
 ```bash
 python3 -c "
 transcript = open('audit_demo/transcript_multipass.txt').read().lower()
