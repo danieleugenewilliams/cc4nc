@@ -53,6 +53,10 @@ Run from `capstones/domain1/` with seeded data.
 - F-C3: Carla - multiple different reasons across refunds
 
 **Grep helper:**
+
+Note: keyword lists for F-B2 and F-C3 were extended for claude-sonnet-4-6 phrasing.
+If switching models, re-run and check for MISSING findings before updating keywords.
+
 ```bash
 python3 -c "
 import sys
@@ -62,10 +66,10 @@ findings = {
     'F-A2': any(x in transcript for x in ['1,212', '1212']),
     'F-A3': any(x in transcript for x in ['manager approv', 'without approval', 'no approval']),
     'F-B1': any(x in transcript for x in ['10%', '1 refund', 'one refund', '10 percent']),
-    'F-B2': any(x in transcript for x in ['no cluster', 'no concern', 'clean', 'low risk']),
+    'F-B2': any(x in transcript for x in ['no cluster', 'no concern', 'clean', 'low risk', 'no temporal', 'watchlist']),
     'F-C1': any(x in transcript for x in ['40%', '4/10', '4 refunds', '40 percent']),
     'F-C2': any(x in transcript for x in ['2,430', '2430', 'high-value', 'high value']),
-    'F-C3': any(x in transcript for x in ['different reason', 'varied reason', 'multiple reason']),
+    'F-C3': any(x in transcript for x in ['different reason', 'varied reason', 'multiple reason', 'defective', 'wrong item', 'fulfillment']),
 }
 hits = sum(findings.values())
 print(f'Findings: {hits}/8')

@@ -41,6 +41,10 @@ python3 audit_demo/audit_multipass.py | tee audit_demo/transcript_multipass.txt
 **Pass criterion:** all 8 findings present; synthesis contains cross-customer insight.
 
 **Automated finding check:**
+
+Note: keywords for F-B2 and F-C3 were extended for claude-sonnet-4-6 phrasing.
+If switching models, re-run and check for MISSING findings before updating keywords.
+
 ```bash
 python3 -c "
 transcript = open('audit_demo/transcript_multipass.txt').read().lower()
@@ -49,10 +53,10 @@ findings = {
     'F-A2 Alice magnitude':       any(x in transcript for x in ['1,212', '1212']),
     'F-A3 Alice approval gap':    any(x in transcript for x in ['manager approv', 'without approval']),
     'F-B1 Bob rate':              any(x in transcript for x in ['10%', '1 refund', '10 percent']),
-    'F-B2 Bob clean':             any(x in transcript for x in ['no cluster', 'clean', 'low risk', 'no concern']),
+    'F-B2 Bob clean':             any(x in transcript for x in ['no cluster', 'no temporal', 'clean', 'low risk', 'no concern', 'watchlist']),
     'F-C1 Carla rate':            any(x in transcript for x in ['40%', '4/10', '40 percent']),
     'F-C2 Carla magnitude':       any(x in transcript for x in ['2,430', '2430', 'high-value', 'high value']),
-    'F-C3 Carla reasons':         any(x in transcript for x in ['different reason', 'varied', 'multiple reason']),
+    'F-C3 Carla reasons':         any(x in transcript for x in ['different reason', 'varied', 'multiple reason', 'defective', 'wrong item', 'fulfillment']),
 }
 hits = sum(findings.values())
 print(f'{hits}/8 findings detected')

@@ -24,6 +24,9 @@ from pathlib import Path
 
 import anthropic
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config import MODEL, WORKER_MAX_TOKENS, SYNTHESIS_MAX_TOKENS
+
 sys.path.insert(0, str(Path(__file__).parent))
 from audit_tools_bridge import TOOL_SCHEMAS, dispatch
 
@@ -72,7 +75,7 @@ CUSTOMERS = [
 ]
 
 
-def run_worker(customer_id: str, email: str) -> str:
+def run_worker(customer_id: str, email: str) -> tuple[str, int, int]:
     """Agentic loop for one customer — identical stop_reason pattern to loop_demo.py."""
     messages = [
         {
@@ -81,21 +84,28 @@ def run_worker(customer_id: str, email: str) -> str:
         }
     ]
     final_text = ""
+    total_input = 0
+    total_output = 0
 
     while True:
         response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1024,
+            model=MODEL,
+            max_tokens=WORKER_MAX_TOKENS,
             tools=TOOL_SCHEMAS,
             messages=messages,
         )
 
         messages.append({"role": "assistant", "content": response.content})
+        total_input += response.usage.input_tokens
+        total_output += response.usage.output_tokens
+
+        # last-wins: we want the final structured analysis, not a concat of
+        # intermediate "I'll now look up..." turns and the closing report.
+        for block in response.content:
+            if block.type == "text" and block.text.strip():
+                final_text = block.text
 
         if response.stop_reason == "end_turn":
-            for block in response.content:
-                if block.type == "text":
-                    final_text = block.text
             break
 
         if response.stop_reason == "tool_use":
@@ -113,7 +123,7 @@ def run_worker(customer_id: str, email: str) -> str:
 
         break
 
-    return final_text
+    return final_text, total_input, total_output
 
 
 def main():
@@ -121,6 +131,8 @@ def main():
     print("=" * 60)
 
     findings = {}
+    worker_input_tokens = 0
+    worker_output_tokens = 0
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = {
@@ -129,7 +141,10 @@ def main():
         }
         for future in as_completed(futures):
             cid = futures[future]
-            findings[cid] = future.result()
+            text, inp, out = future.result()
+            findings[cid] = text
+            worker_input_tokens += inp
+            worker_output_tokens += out
             print(f"  Worker complete: {cid}")
 
     print()
@@ -137,8 +152,8 @@ def main():
     print("-" * 60)
 
     synthesis_response = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=2048,
+        model=MODEL,
+        max_tokens=SYNTHESIS_MAX_TOKENS,
         messages=[
             {
                 "role": "user",
@@ -151,8 +166,17 @@ def main():
         ],
     )
 
+    synth_input = synthesis_response.usage.input_tokens
+    synth_output = synthesis_response.usage.output_tokens
+    total_input = worker_input_tokens + synth_input
+    total_output = worker_output_tokens + synth_output
+
     print()
     print(synthesis_response.content[0].text)
+    print()
+    print(f"workers input tokens: {worker_input_tokens} | workers output tokens: {worker_output_tokens}")
+    print(f"synthesis input tokens: {synth_input} | synthesis output tokens: {synth_output}")
+    print(f"total input tokens: {total_input} | total output tokens: {total_output}")
 
 
 if __name__ == "__main__":

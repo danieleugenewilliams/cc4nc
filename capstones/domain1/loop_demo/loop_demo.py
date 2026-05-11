@@ -17,6 +17,8 @@ import anthropic
 
 sys.path.insert(0, str(Path(__file__).parent))
 from tools_bridge import TOOL_SCHEMAS, dispatch
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config import MODEL, LOOP_MAX_TOKENS
 
 PROMPT = (
     "Has CUST-03 placed any orders over $1,000? "
@@ -32,8 +34,8 @@ print("=" * 60)
 
 while True:
     response = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=1024,
+        model=MODEL,
+        max_tokens=LOOP_MAX_TOKENS,
         tools=TOOL_SCHEMAS,
         messages=messages,
     )
