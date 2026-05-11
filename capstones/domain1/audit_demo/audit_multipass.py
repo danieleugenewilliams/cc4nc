@@ -99,7 +99,8 @@ def run_worker(customer_id: str, email: str) -> tuple[str, int, int]:
         total_input += response.usage.input_tokens
         total_output += response.usage.output_tokens
 
-        # Capture any text produced in this turn (fallback if end_turn has none)
+        # last-wins: we want the final structured analysis, not a concat of
+        # intermediate "I'll now look up..." turns and the closing report.
         for block in response.content:
             if block.type == "text" and block.text.strip():
                 final_text = block.text

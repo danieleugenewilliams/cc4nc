@@ -53,6 +53,10 @@ Run from `capstones/domain1/` with seeded data.
 - F-C3: Carla - multiple different reasons across refunds
 
 **Grep helper:**
+
+Note: keyword lists for F-B2 and F-C3 were extended for claude-sonnet-4-6 phrasing.
+If switching models, re-run and check for MISSING findings before updating keywords.
+
 ```bash
 python3 -c "
 import sys
