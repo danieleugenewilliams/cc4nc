@@ -21,6 +21,9 @@ from pathlib import Path
 
 import anthropic
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config import MODEL, SINGLE_PASS_MAX_TOKENS
+
 DATA_DIR = Path(__file__).parent.parent / "mcp_server" / "data"
 
 client = anthropic.Anthropic()
@@ -62,8 +65,8 @@ print("Running single-pass audit (all customers, one context)...")
 print("=" * 60)
 
 response = client.messages.create(
-    model="claude-sonnet-4-5",
-    max_tokens=2048,
+    model=MODEL,
+    max_tokens=SINGLE_PASS_MAX_TOKENS,
     messages=[{"role": "user", "content": PROMPT}],
 )
 

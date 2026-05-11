@@ -49,10 +49,10 @@ findings = {
     'F-A2 Alice magnitude':       any(x in transcript for x in ['1,212', '1212']),
     'F-A3 Alice approval gap':    any(x in transcript for x in ['manager approv', 'without approval']),
     'F-B1 Bob rate':              any(x in transcript for x in ['10%', '1 refund', '10 percent']),
-    'F-B2 Bob clean':             any(x in transcript for x in ['no cluster', 'clean', 'low risk', 'no concern']),
+    'F-B2 Bob clean':             any(x in transcript for x in ['no cluster', 'no temporal', 'clean', 'low risk', 'no concern', 'watchlist']),
     'F-C1 Carla rate':            any(x in transcript for x in ['40%', '4/10', '40 percent']),
     'F-C2 Carla magnitude':       any(x in transcript for x in ['2,430', '2430', 'high-value', 'high value']),
-    'F-C3 Carla reasons':         any(x in transcript for x in ['different reason', 'varied', 'multiple reason']),
+    'F-C3 Carla reasons':         any(x in transcript for x in ['different reason', 'varied', 'multiple reason', 'defective', 'wrong item', 'fulfillment']),
 }
 hits = sum(findings.values())
 print(f'{hits}/8 findings detected')

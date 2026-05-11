@@ -21,6 +21,8 @@ import anthropic
 
 sys.path.insert(0, str(Path(__file__).parent))
 from tools_bridge import TOOL_SCHEMAS, dispatch
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from config import MODEL, LOOP_MAX_TOKENS
 
 PROMPT = (
     "Has CUST-03 placed any orders over $1,000? "
@@ -48,8 +50,8 @@ def wrong_1_content_type_check():
     messages = [{"role": "user", "content": PROMPT}]
 
     response = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=1024,
+        model=MODEL,
+        max_tokens=LOOP_MAX_TOKENS,
         tools=TOOL_SCHEMAS,
         messages=messages,
     )
@@ -79,8 +81,8 @@ def wrong_2_iteration_cap():
 
     for iteration in range(MAX_ITERATIONS):
         response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1024,
+            model=MODEL,
+            max_tokens=LOOP_MAX_TOKENS,
             tools=TOOL_SCHEMAS,
             messages=messages,
         )
@@ -119,8 +121,8 @@ def wrong_3_text_presence_check():
     while True:
         iteration += 1
         response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1024,
+            model=MODEL,
+            max_tokens=LOOP_MAX_TOKENS,
             tools=TOOL_SCHEMAS,
             messages=messages,
         )
