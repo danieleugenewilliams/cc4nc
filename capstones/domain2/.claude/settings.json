@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__household-tools__add_item",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/check_before_add.py"
+          }
+        ]
+      }
+    ]
+  }
+}

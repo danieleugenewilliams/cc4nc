@@ -1,0 +1,11 @@
+{
+  "description": "MCP Resource — standard subscription categories for household tracking. Read by the agent to validate category names without a tool call.",
+  "categories": [
+    { "id": "entertainment", "label": "Entertainment",       "examples": ["Netflix", "Hulu", "Disney+", "Spotify", "Apple Music", "YouTube Premium"] },
+    { "id": "utilities",     "label": "Utilities",           "examples": ["Cloud storage", "VPN", "Password manager", "Antivirus"] },
+    { "id": "health",        "label": "Health & Fitness",    "examples": ["Gym", "Peloton", "Meditation app", "Telemedicine"] },
+    { "id": "home",          "label": "Home & Family",       "examples": ["Ring", "SimpliSafe", "Grocery delivery", "Meal kit"] },
+    { "id": "work",          "label": "Work & Productivity", "examples": ["Adobe Creative Cloud", "Microsoft 365", "Notion", "Zoom"] },
+    { "id": "financial",     "label": "Financial",           "examples": ["Investment platforms", "Budget tools", "Credit monitoring"] }
+  ]
+}

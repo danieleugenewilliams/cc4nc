@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "household-tools": {
+      "command": "python3",
+      "args": ["mcp_server/server.py"],
+      "env": {
+        "HOUSEHOLD_CURRENT_USER": "${HOUSEHOLD_CURRENT_USER:-admin}",
+        "HOUSEHOLD_DB_PATH": "${HOUSEHOLD_DB_PATH:-}"
+      }
+    }
+  }
+}

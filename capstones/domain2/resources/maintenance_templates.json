@@ -1,0 +1,18 @@
+{
+  "description": "MCP Resource — common household maintenance schedules. Reference as @household-tools://maintenance-templates to get recommended intervals without a tool call. Use tools (get_items_due, add_item) to act on this data.",
+  "note": "Lesson 2.4: This is a resource (application-driven, read-only, no model overhead) not a tool. The agent reads it to answer 'how often should I replace my HVAC filter?' without an API round-trip.",
+  "templates": [
+    { "name": "HVAC filter",              "interval_days": 90,  "notes": "More frequent with pets or allergies (30–60 days)" },
+    { "name": "Smoke detector test",      "interval_days": 180, "notes": "Replace batteries annually; replace unit after 10 years" },
+    { "name": "Carbon monoxide detector", "interval_days": 180, "notes": "Replace unit every 5–7 years per manufacturer" },
+    { "name": "Water heater flush",       "interval_days": 365, "notes": "Extends tank life; reduces sediment buildup" },
+    { "name": "Gutter cleaning",          "interval_days": 180, "notes": "Spring and fall; more if trees overhead" },
+    { "name": "Dryer vent cleaning",      "interval_days": 365, "notes": "Fire prevention — lint buildup is a leading cause" },
+    { "name": "Refrigerator coil cleaning","interval_days": 365, "notes": "Improves efficiency; coils are behind or underneath" },
+    { "name": "Garbage disposal cleaning","interval_days": 30,  "notes": "Ice cubes + rock salt, then citrus peel" },
+    { "name": "Car oil change",           "interval_days": 90,  "notes": "Or per manufacturer — typically 5,000–7,500 miles synthetic" },
+    { "name": "Chimney inspection",       "interval_days": 365, "notes": "Required if used regularly; NFPA 211 standard" },
+    { "name": "Pest control",             "interval_days": 90,  "notes": "Quarterly for most climates" },
+    { "name": "Whole-home air filter",    "interval_days": 30,  "notes": "Thicker media (4–5 inch) lasts longer — check manufacturer" }
+  ]
+}

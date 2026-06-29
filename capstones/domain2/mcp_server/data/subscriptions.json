@@ -1,0 +1,52 @@
+[
+  {
+    "id": "SUB-001",
+    "name": "Netflix",
+    "category": "entertainment",
+    "monthly_cost": 22.99,
+    "renewal_date": "2026-07-15",
+    "owner": "admin",
+    "visibility": "household",
+    "status": "active"
+  },
+  {
+    "id": "SUB-002",
+    "name": "Spotify Family",
+    "category": "entertainment",
+    "monthly_cost": 17.99,
+    "renewal_date": "2026-08-01",
+    "owner": "admin",
+    "visibility": "household",
+    "status": "active"
+  },
+  {
+    "id": "SUB-003",
+    "name": "Gym membership",
+    "category": "health",
+    "monthly_cost": 45.00,
+    "renewal_date": "2026-07-05",
+    "owner": "member",
+    "visibility": "private",
+    "status": "active"
+  },
+  {
+    "id": "SUB-004",
+    "name": "Cloud backup",
+    "category": "utilities",
+    "monthly_cost": 9.99,
+    "renewal_date": "2026-07-20",
+    "owner": "admin",
+    "visibility": "household",
+    "status": "active"
+  },
+  {
+    "id": "SUB-005",
+    "name": "Home security monitoring",
+    "category": "home",
+    "monthly_cost": 29.99,
+    "renewal_date": "2026-08-10",
+    "owner": "admin",
+    "visibility": "private",
+    "status": "active"
+  }
+]

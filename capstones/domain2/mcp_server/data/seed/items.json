@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ITEM-001",
+    "name": "HVAC filter replacement",
+    "category": "maintenance",
+    "due_date": "2026-03-15",
+    "owner": "admin",
+    "visibility": "household",
+    "recurring": true,
+    "recurring_interval_days": 90,
+    "notes": "16x25x1 MERV-8 filter",
+    "created_at": "2025-12-15T10:00:00"
+  },
+  {
+    "id": "ITEM-002",
+    "name": "Smoke detector battery test",
+    "category": "maintenance",
+    "due_date": "2026-07-06",
+    "owner": "admin",
+    "visibility": "household",
+    "recurring": true,
+    "recurring_interval_days": 180,
+    "notes": "Test all 4 units",
+    "created_at": "2025-12-28T10:00:00"
+  },
+  {
+    "id": "ITEM-003",
+    "name": "Water heater flush",
+    "category": "maintenance",
+    "due_date": "2026-09-01",
+    "owner": "admin",
+    "visibility": "household",
+    "recurring": true,
+    "recurring_interval_days": 365,
+    "notes": "Annual maintenance — drain and refill to clear sediment",
+    "created_at": "2025-09-01T10:00:00"
+  },
+  {
+    "id": "ITEM-004",
+    "name": "Weekly grocery run",
+    "category": "recurring",
+    "due_date": "2026-07-01",
+    "owner": "admin",
+    "visibility": "household",
+    "recurring": true,
+    "recurring_interval_days": 7,
+    "notes": null,
+    "created_at": "2026-01-06T10:00:00"
+  },
+  {
+    "id": "ITEM-005",
+    "name": "Car oil change",
+    "category": "maintenance",
+    "due_date": "2026-08-15",
+    "owner": "member",
+    "visibility": "household",
+    "recurring": true,
+    "recurring_interval_days": 90,
+    "notes": "5W-30 synthetic — 2019 Honda Accord",
+    "created_at": "2026-05-15T10:00:00"
+  },
+  {
+    "id": "ITEM-006",
+    "name": "Home office equipment audit",
+    "category": "task",
+    "due_date": "2026-07-15",
+    "owner": "admin",
+    "visibility": "private",
+    "recurring": false,
+    "recurring_interval_days": null,
+    "notes": "Check warranty status on monitor and standing desk",
+    "created_at": "2026-06-01T10:00:00"
+  }
+]
