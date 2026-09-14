@@ -27,13 +27,13 @@ fails=0
 while true; do
   ok=1
   labels=$(gh label list --repo "$R" --limit 100 --json name --jq '.[].name' 2>/dev/null) || ok=0
-  for want in {{LABEL_CHANGES}} {{LABEL_PASSED}} {{LABEL_WAITING}}; do
+  for want in '{{LABEL_CHANGES}}' '{{LABEL_PASSED}}' '{{LABEL_WAITING}}'; do
     printf '%s\n' "$labels" | grep -qx "$want" || ok=0
   done
-  handback=$(gh pr list --repo "$R" --label {{LABEL_CHANGES}} --state open --limit 100 \
+  handback=$(gh pr list --repo "$R" --label '{{LABEL_CHANGES}}' --state open --limit 100 \
              --json number,headRefOid \
              --jq '.[] | "handback \(.number) \(.headRefOid[0:7])"' 2>/dev/null) || ok=0
-  passed=$(gh pr list --repo "$R" --label {{LABEL_PASSED}} --state open --limit 100 \
+  passed=$(gh pr list --repo "$R" --label '{{LABEL_PASSED}}' --state open --limit 100 \
            --json number,baseRefName,headRefName,headRefOid \
            --jq '.[] | "\(.number)\t\(.baseRefName)\t\(.headRefName)\t\(.headRefOid[0:7])"' \
            2>/dev/null) || ok=0

@@ -29,7 +29,7 @@ fails=0
 while true; do
   if ! labels=$(gh label list --repo "$R" --limit 100 --json name --jq '.[].name' 2>/dev/null) \
      || ! printf '%s\n' "$labels" | grep -qx '{{LABEL_WAITING}}' \
-     || ! queue=$(gh pr list --repo "$R" --label {{LABEL_WAITING}} --state open --limit 100 \
+     || ! queue=$(gh pr list --repo "$R" --label '{{LABEL_WAITING}}' --state open --limit 100 \
                --json number,headRefOid \
                --jq '.[] | "\(.number) \(.headRefOid[0:7])"' 2>/dev/null); then
     fails=$((fails+1))
@@ -60,6 +60,11 @@ map to a specific line here:
   The same index lags a label change by a few seconds — observed: a PR labelled at creation
   was absent from the list, then present 5 s later. Invisible at a poll of minutes; do not
   "fix" a blank first read by polling faster.
+- **The label is quoted.** Step 2 reuses labels the repo already has, and `help wanted`
+  is one most repos have. Unquoted, `gh` reads `wanted` as a positional argument and
+  exits 1 — a failed poll on every tick, so the watchdog fires once and the queue is
+  silent forever. Measured: `gh pr list --label help wanted` printed `unknown argument
+  "wanted"; please quote all values that have spaces`.
 - **Keys on number _and_ head commit.** Number alone is silent when a PR already in the
   queue is pushed to — the second round.
 - **A failed poll publishes nothing and leaves `prev` alone.** `2>/dev/null` alone turns an
