@@ -46,9 +46,14 @@ fi
 # What's about to be pushed: commits on HEAD not on the upstream tracking branch.
 if upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then
   range="${upstream}..HEAD"
-else
+elif git rev-parse --verify -q 'HEAD~1' >/dev/null; then
   # No upstream yet (first push of a branch): review the last commit only.
   range="HEAD~1..HEAD"
+else
+  # HEAD is the root commit (first push of a brand-new repo): HEAD~1 does not
+  # exist and `git diff HEAD~1..HEAD` exits 128, which would kill the push with
+  # a git error instead of a review. Diff against the empty tree instead.
+  range="$(git hash-object -t tree /dev/null)..HEAD"
 fi
 
 echo "pre-push: reviewing $range with the self-hosted gate…" >&2
