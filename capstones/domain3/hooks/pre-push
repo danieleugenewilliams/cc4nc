@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# Opt-in git pre-push hook: run the self-hosted review gate over everything
+# you're about to push, and abort the push if it finds a high-severity defect.
+#
+# This file is NOT installed automatically. To wire it into a repo you own:
+#
+#   ln -s "$(pwd)/capstones/domain3/hooks/pre-push" .git/hooks/pre-push
+#   chmod +x capstones/domain3/hooks/pre-push
+#
+# To push anyway in an emergency, git's standard escape hatch applies:
+#
+#   git push --no-verify
+#
+# The gate reviews the commit range being pushed against its upstream, so it
+# only looks at *your* new work, not the whole history.
+set -euo pipefail
+
+GATE="$(git rev-parse --show-toplevel)/capstones/domain3/reviewer/ai-review.sh"
+[[ -x "$GATE" ]] || { echo "pre-push: gate not found at $GATE — skipping." >&2; exit 0; }
+
+# What's about to be pushed: commits on HEAD not on the upstream tracking branch.
+if upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then
+  range="${upstream}..HEAD"
+else
+  # No upstream yet (first push of a branch): review the last commit only.
+  range="HEAD~1..HEAD"
+fi
+
+echo "pre-push: reviewing $range with the self-hosted gate…" >&2
+exec "$GATE" --range "$range"

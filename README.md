@@ -19,6 +19,16 @@ A working customer support agent that handles refunds. Demonstrates the architec
 
 See [`capstones/domain1/README.md`](capstones/domain1/README.md) for the full walkthrough.
 
+### Domain 3: The Self-Hosted Review Gate
+
+A code review gate that runs `claude -p --bare` on a machine you own, gated on severity, reporting its real cost. No GitHub Actions, no managed runner. Ties together Lessons 3.4 through 3.6:
+
+- You choose what the gate blocks on (L3.4)
+- The gate is a runnable pass/fail check, not "looks done" (L3.5)
+- An independent reviewer that does not inherit the context that wrote the code (L3.6)
+
+See [`capstones/domain3/README.md`](capstones/domain3/README.md) for setup, the planted defect, and the stability loop.
+
 ## Skills
 
 Reusable Claude Code skills from the newsletter, ready to copy into `~/.claude/skills/`:
