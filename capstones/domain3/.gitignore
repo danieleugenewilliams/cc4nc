@@ -1,0 +1,3 @@
+# Never commit real credentials — only .env.example is tracked.
+.env
+**/.env
