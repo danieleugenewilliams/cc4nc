@@ -19,6 +19,14 @@ A working customer support agent that handles refunds. Demonstrates the architec
 
 See [`capstones/domain1/README.md`](capstones/domain1/README.md) for the full walkthrough.
 
+## Skills
+
+Reusable Claude Code skills from the newsletter, ready to copy into `~/.claude/skills/`:
+
+- [`build-review-loop`](skills/build-review-loop/): set up a builder–reviewer loop on a repo, two agent sessions working a backlog through pull requests while nobody is watching, with GitHub labels as the state machine.
+
+See [`skills/README.md`](skills/README.md) for install instructions.
+
 ## Quickstart
 
 If you have Claude Code installed, the fastest way to run the Domain 1 capstone is to copy [`prompts/run-domain1-capstone.md`](prompts/run-domain1-capstone.md) and paste it into Claude Code. Claude will clone the repo, install dependencies, and walk you through each demo.

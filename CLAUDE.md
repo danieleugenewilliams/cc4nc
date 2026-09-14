@@ -8,6 +8,7 @@ This is the public companion repository for [Claude Code for Non-Coders](https:/
 capstones/domain1/   — Domain 1 customer support agent (complete)
 capstones/domain2/   — Domain 2 household operations agent (complete)
 prompts/             — Subscriber paste-in walkthrough prompts
+skills/              — Reusable Claude Code skills (copy into ~/.claude/skills/)
 ```
 
 ## Lesson-to-article mapping
