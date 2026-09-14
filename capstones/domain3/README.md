@@ -47,7 +47,10 @@ capstones/domain3/
 │       └── safe-refactor.diff            # clean → gate must PASS
 ├── hooks/pre-push          # opt-in git hook that runs the gate before a push
 ├── run-demo.sh             # drives both diffs + a stability loop
-└── verification/REGRESSION.md
+├── prompts/build-your-own.md          # paste-in prompt to build this gate in your own repo
+└── verification/
+    ├── REGRESSION.md                  # checklist A–J + results log
+    └── health-agent-evidence.md       # real runs against the public health-fitness-agent repo
 ```
 
 ## The planted defect
@@ -72,7 +75,7 @@ cp .env.example .env
 # then either put ANTHROPIC_API_KEY in .env, or run `claude /login` once
 ```
 
-Requirements: `claude` CLI (v2.1.191+), `jq`, `bash`.
+Requirements: `claude` CLI (v2.1.205+ — earlier versions silently ignore `--json-schema`), `jq`, `bash`.
 
 ## Run it
 
@@ -88,10 +91,11 @@ STABILITY_RUNS=8 ./run-demo.sh
 ./reviewer/ai-review.sh --range main..HEAD
 ```
 
-Wire it into a repo you own as a real gate:
+Wire it into a repo you own as a real gate (run from that repo's root; the
+hook follows the symlink back to this checkout to find the reviewer):
 
 ```bash
-ln -s "$(pwd)/capstones/domain3/hooks/pre-push" .git/hooks/pre-push
+ln -s /path/to/cc4nc/capstones/domain3/hooks/pre-push .git/hooks/pre-push
 # `git push` now runs the gate; `git push --no-verify` is the escape hatch
 ```
 

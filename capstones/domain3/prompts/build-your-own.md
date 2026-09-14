@@ -34,7 +34,7 @@ making as the person who owns this pipeline:
    symlink it when I'm ready.
 
 4. **Prove it works, honestly**: plant an unambiguous high-severity change in a
-   throwaay file (e.g. delete an authorization or bounds check), and show the
+   throwaway file (e.g. delete an authorization or bounds check), and show the
    gate blocking it **8 times in a row** — review is probabilistic, so one block
    proves nothing. Then show a behaviour-preserving refactor that the gate lets
    through, so I know it isn't just blocking everything.

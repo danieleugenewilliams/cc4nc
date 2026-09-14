@@ -107,17 +107,21 @@ result_str="$(printf '%s' "$raw" | jq -r '.result // empty')"
 cost="$(printf '%s' "$raw" | jq -r '.total_cost_usd // 0')"
 dur_ms="$(printf '%s' "$raw" | jq -r '.duration_ms // 0')"
 
-if [[ "$is_error" == "true" || -z "$result_str" ]]; then
+if [[ "$is_error" == "true" ]]; then
   echo "error: reviewer call failed: ${result_str:-unknown error}" >&2
   echo "       (if this says 'Not logged in', add ANTHROPIC_API_KEY to reviewer/.env" >&2
   echo "        or run 'claude /login' — see .env.example)" >&2
   exit 2
 fi
 
-# The schema-constrained answer is a JSON string inside .result
-if ! findings="$(printf '%s' "$result_str" | jq -c '.findings' 2>/dev/null)" || [[ "$findings" == "null" ]]; then
+# With --json-schema the validated answer lives in .structured_output (the
+# documented field). Older CLIs put the same JSON as a string in .result, so
+# fall back to parsing that.
+findings="$(printf '%s' "$raw" \
+  | jq -c '.structured_output.findings // (.result | fromjson? | .findings) // empty' 2>/dev/null || true)"
+if [[ -z "$findings" || "$findings" == "null" ]]; then
   echo "error: could not parse findings from model output:" >&2
-  printf '%s\n' "$result_str" | head -c 800 >&2; echo >&2
+  printf '%s\n' "${result_str:-$raw}" | head -c 800 >&2; echo >&2
   exit 2
 fi
 
