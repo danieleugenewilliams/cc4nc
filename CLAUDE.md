@@ -34,3 +34,7 @@ When a domain capstone is complete in the academy, the build goes into `capstone
 ## Series index updates
 
 After each new lesson publishes, update `~/Documents/Newsletters/architecture-series-index.md` with the live Substack URL. The index is pinned and updated every Tuesday after the piece goes live.
+
+## Builder–reviewer loop
+
+- Builder–reviewer loop: see `docs/review-loop.md` (roles, labels, merge predicate). Sessions named builder/reviewer run `/builder-watch` and `/reviewer-watch`. Verification gate: `bash scripts/check.sh`.
