@@ -17,8 +17,10 @@ session that reviews its own work is not a second opinion.
 
 ## Labels
 
-Labels live on the **PR**, not the issue. The issue is the backlog; the PR is the unit of
-review. Every label below exists in the repo — confirmed with `gh label list` when this
+The three review-state labels live on the **PR**, not the issue. The issue is the backlog;
+the PR is the unit of review. The one exception is a claimed label, if this loop has one: it
+marks an **issue** a builder has taken before any PR exists, and comes off once the PR is
+labelled. Every label below exists in the repo — confirmed with `gh label list` when this
 file was generated. Never write a fourth into a prompt without creating it first.
 
 | Label | Set by | Means |
@@ -26,7 +28,7 @@ file was generated. Never write a fourth into a prompt without creating it first
 | `ready-for-review` | builder | This PR is waiting for a reviewer. |
 | `ready-to-merge` | reviewer | Reviewed and clean. The only signal that authorises a merge. |
 | `needs-changes` | reviewer | Findings the reviewer could not place here. Back to the builder. |
-| `in-progress` | builder | A builder has taken this item and not yet opened its PR. Durable because builders run in parallel and one session's memory is invisible to another. |
+| `in-progress` | builder | On the **issue**: a builder has taken this item and not yet opened its PR. Durable because builders run in parallel and one session's memory is invisible to another. |
 
 `ready-to-merge` and `needs-changes` are mutually exclusive. A reviewer sets **at
 most** one of them and removes `ready-for-review` with whichever it sets. *At most*, not
@@ -34,7 +36,7 @@ most** one of them and removes `ready-for-review` with whichever it sets. *At mo
 `ready-for-review` stays on. Written as *exactly one* the rule reads as an instruction to
 pick a label anyway, which is a pass over an unread diff.
 
-Claims: Before starting an item, label it `in-progress`; an item already carrying it belongs to someone else. Remove it when the PR is labelled `ready-for-review`.
+Claims: Before starting an item, label the **issue** `in-progress` (`gh issue edit <n> --add-label`); an issue already carrying it belongs to someone else, and the poll that picks work is `gh issue list` filtered to issues without it. Remove it from the issue when the PR is labelled `ready-for-review`.
 
 ## State table
 
@@ -193,7 +195,9 @@ that reads it. *An agent that reads a reason it can see is false skips the step.
   where a PR can come from anywhere, it is arbitrary code execution on the review host, and
   neither `allowed-tools` nor the session name stands in front of it. The repairs are
   launch-time, not edits: start the sessions with `--setting-sources user` so a branch's
-  project config cannot auto-run, and — if the builder itself takes untrusted input — gate the
+  project config cannot auto-run — **that flag also drops this repo's `.claude/commands/`**
+  (verified: `/reviewer-watch` resolves without it and not with it), so first copy the two
+  watch commands into `~/.claude/commands/` — and — if the builder itself takes untrusted input — gate the
   merge verb behind something the session cannot call (a human tap, a one-shot token) rather
   than the session name.
 - **`git push origin HEAD:*` admits `HEAD:main`**, which lands everything and

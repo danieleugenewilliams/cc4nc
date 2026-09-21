@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, gh pr merge*, gh issue list*, gh issue view*, gh api repos/danieleugenewilliams/cc4nc/issues/*/timeline*, gh api repos/danieleugenewilliams/cc4nc/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, bash scripts/check.sh*), Monitor, TaskStop, Agent, PushNotification
+allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, gh pr merge*, gh issue list*, gh issue view*, gh issue edit*, gh api repos/danieleugenewilliams/cc4nc/issues/*/timeline*, gh api repos/danieleugenewilliams/cc4nc/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, bash*), Monitor, TaskStop, Agent, PushNotification
 description: Watch the builder queue — place handed-back fixes, re-queue PRs whose base has moved, and act on what is mergeable after the checks. Usage: /builder-watch [poll-seconds] [max-active]
 ---
 
@@ -196,7 +196,7 @@ and say nothing if the stopped-comment is already posted.
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
 oldest open issue from `gh issue list --repo danieleugenewilliams/cc4nc --state open` that no PR already
-references. Before starting an item, label it `in-progress`; an item already carrying it belongs to someone else. Remove it when the PR is labelled `ready-for-review`. Branch from `main`, do the work in a subagent, run
+references. Before starting an item, label the **issue** `in-progress` (`gh issue edit <n> --add-label`); an issue already carrying it belongs to someone else, and the poll that picks work is `gh issue list` filtered to issues without it. Remove it from the issue when the PR is labelled `ready-for-review`. Branch from `main`, do the work in a subagent, run
 `bash scripts/check.sh`, open the PR with `Closes #<issue>` in the body, and label it
 `ready-for-review`. Never self-review.
 
