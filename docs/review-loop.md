@@ -197,9 +197,9 @@ that reads it. *An agent that reads a reason it can see is false skips the step.
   launch-time, not edits: start the sessions with `--setting-sources user` so a branch's
   project config cannot auto-run — **that flag also drops this repo's `.claude/commands/`**
   (verified: `/reviewer-watch` resolves without it and not with it), so first copy the two
-  watch commands into `~/.claude/commands/` — and — if the builder itself takes untrusted input — gate the
-  merge verb behind something the session cannot call (a human tap, a one-shot token) rather
-  than the session name.
+  watch commands into `~/.claude/commands/`. And if the builder itself takes untrusted input,
+  gate the merge verb behind something the session cannot call (a human tap, a one-shot
+  token) rather than the session name.
 - **`git push origin HEAD:*` admits `HEAD:main`**, which lands everything and
   skips every check. No glob admits arbitrary runtime branch names while excluding the base
   branch. The two real repairs are decisions, not edits: drop the push glob and let every

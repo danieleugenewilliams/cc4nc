@@ -17,8 +17,10 @@ session that reviews its own work is not a second opinion.
 
 ## Labels
 
-Labels live on the **PR**, not the issue. The issue is the backlog; the PR is the unit of
-review. Every label below exists in the repo — confirmed with `gh label list` when this
+The three review-state labels live on the **PR**, not the issue. The issue is the backlog;
+the PR is the unit of review. The one exception is a claimed label, if this loop has one: it
+marks an **issue** a builder has taken before any PR exists, and comes off once the PR is
+labelled. Every label below exists in the repo — confirmed with `gh label list` when this
 file was generated. Never write a fourth into a prompt without creating it first.
 
 | Label | Set by | Means |
@@ -125,6 +127,20 @@ the commit that would go is the other session's.
 
 - **`allowed-tools` is pre-approval, not a deny.** A call outside the list prompts a
   person; under bypassed permissions it stops nothing. It removes the silent path.
+- **Reviewing a PR runs the PR.** The reviewer checks the branch out into a worktree and
+  runs `{{TEST_CMD}}` against it — which executes that branch's own test and build scripts,
+  package-manager lifecycle hooks included — and the moment the worktree is trusted, any
+  `.claude/` hook, `.mcp.json`, or `CLAUDE.md` the branch carries auto-runs too, under whatever
+  permissions the session holds (bypassed, for an unattended loop). The diff is data to read
+  **and** code that runs. Where every PR comes from your own builder, that is your own code;
+  where a PR can come from anywhere, it is arbitrary code execution on the review host, and
+  neither `allowed-tools` nor the session name stands in front of it. The repairs are
+  launch-time, not edits: start the sessions with `--setting-sources user` so a branch's
+  project config cannot auto-run — **that flag also drops this repo's `.claude/commands/`**
+  (verified: `/reviewer-watch` resolves without it and not with it), so first copy the two
+  watch commands into `~/.claude/commands/`. And if the builder itself takes untrusted input,
+  gate the merge verb behind something the session cannot call (a human tap, a one-shot
+  token) rather than the session name.
 - **`git push origin HEAD:*` admits `HEAD:{{BASE_BRANCH}}`**, which lands everything and
   skips every check. No glob admits arbitrary runtime branch names while excluding the base
   branch. The two real repairs are decisions, not edits: drop the push glob and let every
@@ -132,3 +148,9 @@ the commit that would go is the other session's.
   protection on the remote is the third and the only one enforced off this machine.
 - **The loop converges; it does not decide.** Nothing here can mechanise "this feature is
   good enough." A third hand-back is where a person comes in.
+- **Merging is not deploying.** The last state here is *merged* — that lands code, it does
+  not run it. A repo that executes its own merged code — a service, a bot, an agent that reads
+  its own config — needs a separate activation step (pull the deployed tree, restart what the
+  change touched), and "merged" reported as "live" is where this project's worst latent bug sat
+  undeployed for hours. The loop stops at the merge on purpose; wiring merge→live — and knowing
+  which changes go live on next read versus which need a restart — is yours.

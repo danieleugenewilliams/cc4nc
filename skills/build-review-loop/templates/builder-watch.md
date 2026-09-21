@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh issue list*, gh issue view*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
+allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh issue list*, gh issue view*, gh issue edit*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
 description: Watch the builder queue — place handed-back fixes, re-queue PRs whose base has moved, and act on what is mergeable after the checks. Usage: /builder-watch [poll-seconds] [max-active]
 ---
 
