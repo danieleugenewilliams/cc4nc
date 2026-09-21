@@ -61,8 +61,8 @@ P
 )
 fi
 if [ -n "${v[LABEL_CLAIMED]}" ]; then
-  v[CLAIMED_ROW]="| \`${v[LABEL_CLAIMED]}\` | builder | A builder has taken this item and not yet opened its PR. Durable because builders run in parallel and one session's memory is invisible to another. |"
-  v[CLAIMED_RULE]="Before starting an item, label it \`${v[LABEL_CLAIMED]}\`; an item already carrying it belongs to someone else. Remove it when the PR is labelled \`${v[LABEL_WAITING]}\`."
+  v[CLAIMED_ROW]="| \`${v[LABEL_CLAIMED]}\` | builder | On the **issue**: a builder has taken this item and not yet opened its PR. Durable because builders run in parallel and one session's memory is invisible to another. |"
+  v[CLAIMED_RULE]="Before starting an item, label the **issue** \`${v[LABEL_CLAIMED]}\` (\`gh issue edit <n> --add-label\`); an issue already carrying it belongs to someone else, and the poll that picks work is \`gh issue list\` filtered to issues without it. Remove it from the issue when the PR is labelled \`${v[LABEL_WAITING]}\`."
 else
   v[CLAIMED_ROW]=""
   v[CLAIMED_RULE]="One builder session dispatches everything, so a claim is held in that session's memory; a restart re-derives the queue from labels. If builders ever run in parallel, add a durable claimed label first."

@@ -1,39 +1,39 @@
 ---
-allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh issue list*, gh issue view*, gh issue edit*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
+allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, gh pr merge*, gh issue list*, gh issue view*, gh issue edit*, gh api repos/danieleugenewilliams/cc4nc/issues/*/timeline*, gh api repos/danieleugenewilliams/cc4nc/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, bash*), Monitor, TaskStop, Agent, PushNotification
 description: Watch the builder queue — place handed-back fixes, re-queue PRs whose base has moved, and act on what is mergeable after the checks. Usage: /builder-watch [poll-seconds] [max-active]
 ---
 
 # /builder-watch — hold the builder end of the loop
 
-Arms a persistent watch over the things the builder owes an answer to on `{{REPO}}`. Read
-`{{CONTRACT_PATH}}` first; this command executes that contract and does not restate it.
+Arms a persistent watch over the things the builder owes an answer to on `danieleugenewilliams/cc4nc`. Read
+`docs/review-loop.md` first; this command executes that contract and does not restate it.
 
-Arguments: `$ARGUMENTS` → `[poll-seconds] [max-active]`, defaulting to `{{POLL}}` (minimum
-`60`) and `{{ACTIVE}}`. **Substitute both into the script before arming it** — a `$POLL` or
+Arguments: `$ARGUMENTS` → `[poll-seconds] [max-active]`, defaulting to `120` (minimum
+`60`) and `3`. **Substitute both into the script before arming it** — a `$POLL` or
 `$ACTIVE` the script never receives is a setting that silently does nothing.
 
 ## Arm the watch
 
-One `Monitor`, `persistent: true`, described as "builder queue on {{REPO}}". It emits a
+One `Monitor`, `persistent: true`, described as "builder queue on danieleugenewilliams/cc4nc". It emits a
 tagged line for three events, because all three need the builder and none needs a second
 poll loop:
 
 ```bash
-POLL={{POLL}}
-ACTIVE={{ACTIVE}}
-R={{REPO}}
+POLL=120
+ACTIVE=3
+R=danieleugenewilliams/cc4nc
 prev=""
 fails=0
 while true; do
   ok=1
   labels=$(gh label list --repo "$R" --limit 100 --json name --jq '.[].name' 2>/dev/null) || ok=0
-  for want in '{{LABEL_CHANGES}}' '{{LABEL_PASSED}}' '{{LABEL_WAITING}}'; do
+  for want in 'needs-changes' 'ready-to-merge' 'ready-for-review'; do
     printf '%s\n' "$labels" | grep -qx "$want" || ok=0
   done
-  handback=$(gh pr list --repo "$R" --label '{{LABEL_CHANGES}}' --state open --limit 100 \
+  handback=$(gh pr list --repo "$R" --label 'needs-changes' --state open --limit 100 \
              --json number,headRefOid \
              --jq '.[] | "handback \(.number) \(.headRefOid[0:7])"' 2>/dev/null) || ok=0
-  passed=$(gh pr list --repo "$R" --label '{{LABEL_PASSED}}' --state open --limit 100 \
+  passed=$(gh pr list --repo "$R" --label 'ready-to-merge' --state open --limit 100 \
            --json number,baseRefName,headRefName,headRefOid \
            --jq '.[] | "\(.number)\t\(.baseRefName)\t\(.headRefName)\t\(.headRefOid[0:7])"' \
            2>/dev/null) || ok=0
@@ -77,8 +77,8 @@ ones this file sharpens:
   rate limit on one list, or on one `compare` call, loses that category, `prev` is
   overwritten with the partial set, and the next good tick re-emits everything in it.
 - **`stale` is a state check, not an event.** It asks which open PRs carrying
-  `{{LABEL_PASSED}}` are *behind their base*. The event-shaped version — poll for merged
-  PRs — replays history: merged PRs keep `{{LABEL_PASSED}}` by design, so every arm and
+  `ready-to-merge` are *behind their base*. The event-shaped version — poll for merged
+  PRs — replays history: merged PRs keep `ready-to-merge` by design, so every arm and
   every restart would emit every one of them as fresh. A state check has no first-tick
   replay and no gap while the watch is down.
 - **`handback` and `mergeable` are label reads, and both labels survive the state they
@@ -107,7 +107,7 @@ confusable line in the stream because every event is tag-first and `held 2` has 
 of one; a handler that falls through to a default would hand a subagent the PR numbered 2.
 
 **First, the claim.** Hold the set of PR numbers this session has a round running on and
-drop any event naming one of them. `{{LABEL_CHANGES}}` stays on while the fix is being
+drop any event naming one of them. `needs-changes` stays on while the fix is being
 placed, and placing a fix means pushing, so a tick mid-round sees the PR at a new head and
 emits `handback <n> <newsha>` as fresh work. A second fix-placement round on a PR already
 being fixed is how one finding becomes two conflicting commits.
@@ -121,50 +121,60 @@ the PR, and hold it. Restarting the watch is the release, and that is a person's
 review comment. Put the fix where it belongs, which may be a **different PR** if this repo
 stacks; *fix a finding in the PR that introduced it*. If the fix went elsewhere, that PR
 has to land before this one goes back in the queue — until it does, this diff is the one
-the reviewer already read, defect included. Run `{{TEST_CMD}}`. Then `{{LABEL_CHANGES}}`
-off, `{{LABEL_WAITING}}` on.
+the reviewer already read, defect included. Run `bash scripts/check.sh`. Then `needs-changes`
+off, `ready-for-review` on.
 
-Read the PR before placing anything. `{{LABEL_CHANGES}}` persists until the swap, so this
+Read the PR before placing anything. `needs-changes` persists until the swap, so this
 event re-emits on every arm of the watch, and a restart mid-round would otherwise open a
 second fix-placement pass on a PR whose fix is already in the branch.
 
 **`stale <n> <behind>`** — this PR carries a pass taken against a diff its base has since
-moved past. **Swap first, then merge forward:** `{{LABEL_PASSED}}` off, `{{LABEL_WAITING}}`
+moved past. **Swap first, then merge forward:** `ready-to-merge` off, `ready-for-review`
 on, and only then `git fetch origin`, merge `origin/<base>`, `git push origin HEAD:<branch>`.
 
 The order is the finding, not a preference. Merging first leaves a window in which the PR
-is no longer behind and still carries `{{LABEL_PASSED}}` — and the next tick is one `$POLL`
+is no longer behind and still carries `ready-to-merge` — and the next tick is one `$POLL`
 away, less than the merge and two label calls take. In that window this same loop
 classifies it `mergeable`. Swapping first cannot do that: the label is gone before
 `behind_by` reaches 0.
 
 **Finish the push.** A rejected push means the reviewer pushed a fix while this ran; never
 `--force`. Fetch, merge again, push again — and do not leave it for the next tick, because
-after the swap this PR no longer carries `{{LABEL_PASSED}}` and the stale query will never
+after the swap this PR no longer carries `ready-to-merge` and the stale query will never
 return it a second time.
 
-**`mergeable <n> <sha>`** — {{MERGEABLE_ACTION}}. The watch's line is a state read from one
+**`mergeable <n> <sha>`** — run the four checks below and merge. The watch's line is a state read from one
 tick ago; the checks are against the PR as it is now:
 
-1. `{{LABEL_PASSED}}` is still on and `{{LABEL_WAITING}}` and `{{LABEL_CHANGES}}` are both
+1. `ready-to-merge` is still on and `ready-for-review` and `needs-changes` are both
    off. If not, a round moved them between the tick and now — do nothing.
 2. The head is the head the label was set at: on the PR's timeline the last
-   `labeled {{LABEL_PASSED}}` event comes after the last commit, and the sha equals the one
+   `labeled ready-to-merge` event comes after the last commit, and the sha equals the one
    the reviewer's **latest LGTM** first line names. A commit after the labelling is a diff
-   nobody has passed — swap `{{LABEL_PASSED}}` off and `{{LABEL_WAITING}}` on and stop. A
+   nobody has passed — swap `ready-to-merge` off and `ready-for-review` on and stop. A
    `committed` timeline event carries `committer.date`, which is when the commit was
    *made*, not pushed — so the sha equality is the half that is exact, and both are
    required. An LGTM naming no sha fails this check.
-3. The base is `{{BASE_BRANCH}}`. A PR based on another open branch is a stack whose base
+3. The base is `main`. A PR based on another open branch is a stack whose base
    has not landed; leave it for the base's own `mergeable`. After that base lands, retarget
-   the child (`gh pr edit <n> --base {{BASE_BRANCH}}`) and it will come back as `stale`,
+   the child (`gh pr edit <n> --base main`) and it will come back as `stale`,
    which is the right thing for it to be.
-4. `behind_by` is 0 against `{{BASE_BRANCH}}`. If not, the tick was stale itself; the
+4. `behind_by` is 0 against `main`. If not, the tick was stale itself; the
    `stale` handler is the one to run.
 
-{{MERGER_SENTENCE}}
+The **builder** merges, on `mergeable` and only after the checks below.
 
-{{MERGE_PARAGRAPHS}}
+Merge with `gh pr merge <n> --repo danieleugenewilliams/cc4nc --merge`, never `--delete-branch` on a
+stack, never `--admin`. Say what landed, at which sha. Children the landing staled show up
+as `stale` on the next tick. **If `gh pr merge` exits non-zero, stop and say so.** Do not
+retry with other flags, resolve nothing, and never reach for
+`git push origin HEAD:main`. Leave the labels as they are — the pass is still
+true of the head — and notify: a merge that fails is a PR that needs a person.
+
+Note what `gh pr merge*` on the allowlist admits: `--squash` and `--delete-branch` too,
+because the number comes before the flags and no glob refuses a trailing flag. The prose is
+what keeps those out. And `git push origin HEAD:*` matches `HEAD:main`, which
+lands everything and skips every check; the contract names that hole and its repairs.
 
 ## The hand-back cap
 
@@ -172,23 +182,23 @@ Three hand-backs on one PR and the loop stops on it — same count, same source 
 `/reviewer-watch`, read from the PR's timeline, never from session memory:
 
 ```bash
-gh api repos/{{REPO}}/issues/<n>/timeline --paginate --slurp \
-  | jq '[.[][] | select(.event=="labeled" and .label.name=="{{LABEL_CHANGES}}")] | length'
+gh api repos/danieleugenewilliams/cc4nc/issues/<n>/timeline --paginate --slurp \
+  | jq '[.[][] | select(.event=="labeled" and .label.name=="needs-changes")] | length'
 ```
 
 Paginate or the count fails open: the timeline pages at 30 ascending, so the events lost
 are the recent ones. At 3 or more: place no fix, swap no label. Comment saying the loop has
 stopped on this PR and why, and `PushNotification`. Once — *swap no label* leaves
-`{{LABEL_CHANGES}}` on, so the PR re-emits on every session start; read the comments first
+`needs-changes` on, so the PR re-emits on every session start; read the comments first
 and say nothing if the stopped-comment is already posted.
 
 ## Taking new work
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
-oldest open issue from `gh issue list --repo {{REPO}} --state open` that no PR already
-references. {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
-`{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, and label it
-`{{LABEL_WAITING}}`. Never self-review.
+oldest open issue from `gh issue list --repo danieleugenewilliams/cc4nc --state open` that no PR already
+references. Before starting an item, label the **issue** `in-progress` (`gh issue edit <n> --add-label`); an issue already carrying it belongs to someone else, and the poll that picks work is `gh issue list` filtered to issues without it. Remove it from the issue when the PR is labelled `ready-for-review`. Branch from `main`, do the work in a subagent, run
+`bash scripts/check.sh`, open the PR with `Closes #<issue>` in the body, and label it
+`ready-for-review`. Never self-review.
 
 ## Stopping
 
