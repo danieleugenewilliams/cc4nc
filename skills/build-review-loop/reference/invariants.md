@@ -57,4 +57,6 @@ that reads it. *An agent that reads a reason it can see is false skips the step.
 19. **Stop after three hand-backs, say so once, and notify.** Two agents can pass work back
     and forth forever. Once, because the item stays in the queue and every new session
     re-emits it, and a notification that repeats is one the person learns to ignore.
-20. **Say when the watch stops.** A stopped watch and an empty queue look identical.
+20. **Say when the watch stops.** A stopped watch and an empty queue look identical. The
+    same goes for expiry: a `Monitor` caps at 30 minutes and there is no `persistent` flag,
+    so arm at the maximum, re-arm on expiry, and say on each re-arm that it re-armed.

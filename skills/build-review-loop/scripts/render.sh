@@ -42,10 +42,14 @@ retry with other flags, resolve nothing, and never reach for
 `git push origin HEAD:{{BASE_BRANCH}}`. Leave the labels as they are — the pass is still
 true of the head — and notify: a merge that fails is a PR that needs a person.
 
-Note what `gh pr merge*` on the allowlist admits: `--squash` and `--delete-branch` too,
-because the number comes before the flags and no glob refuses a trailing flag. The prose is
-what keeps those out. And `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`, which
-lands everything and skips every check; the contract names that hole and its repairs.
+`gh pr merge*` appears on this command's allowlist, but the comma-inside form that line
+uses matches nothing, so the merge is not pre-approved: a person approves it, or in auto
+mode the classifier passes it. Do not rewrite the line into one `Bash()` per rule to make it
+match — that would pre-approve `gh pr merge*` with `--squash`, `--admin` and
+`--delete-branch` (the number comes before the flags and no glob refuses a trailing flag),
+and `git merge*` with it. The prose is what keeps those flags out. `git push origin HEAD:*`
+matches nothing either; a push to `{{BASE_BRANCH}}` is stopped by the deny rules the
+contract lists.
 P
 )
 else
@@ -54,9 +58,9 @@ else
   v[MERGE_TOOL]=""
   v[MERGE_PARAGRAPHS]=$(cat <<'P'
 Notify the person with the PR number and the sha the checks passed at, and stop. No merge
-verb is pre-approved for this command. `git push origin HEAD:*` still matches
-`HEAD:{{BASE_BRANCH}}`, which lands everything and skips every check; the contract names
-that hole and its repairs.
+verb is on this command's allowlist — and that allowlist's comma-inside form pre-approves
+nothing anyway. A push to `{{BASE_BRANCH}}` is stopped by the deny rules the contract
+lists, not by `git push origin HEAD:*`, which matches nothing.
 P
 )
 fi

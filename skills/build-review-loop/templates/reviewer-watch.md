@@ -5,7 +5,7 @@ description: Watch the reviewer queue and review each PR that enters it. Usage: 
 
 # /reviewer-watch — hold the reviewer end of the loop
 
-Arms a persistent watch over `gh pr list --label {{LABEL_WAITING}}` on `{{REPO}}` and
+Arms a watch over `gh pr list --label {{LABEL_WAITING}}` on `{{REPO}}` and
 reviews each PR that enters the queue. Read `{{CONTRACT_PATH}}` first; this command
 executes that contract and does not restate it.
 
@@ -17,8 +17,16 @@ setting that silently does nothing.
 
 ## Arm the watch
 
-Call `Monitor` with `persistent: true` and a description naming the queue, not the tool
-("reviewer queue on {{REPO}}"). The command:
+Call `Monitor` at the maximum timeout, with a description naming the queue, not the tool
+("reviewer queue on {{REPO}}").
+
+**There is no `persistent` flag; a watch caps at 30 minutes.** Arm it at the maximum
+timeout, re-arm it with the same script when it expires, and **say on each re-arm that it
+re-armed.** A dead watch and a quiet queue look identical; the re-arm line is the only thing
+that tells them apart. A re-armed watch starts with an empty `prev`, so its first tick
+re-emits what is already labelled — the handlers below are written to expect that.
+
+The command:
 
 ```bash
 POLL={{POLL}}
@@ -189,18 +197,26 @@ first tick of every new session emits it again. Read the PR's comments first and
 silent if the stopped-comment is already there. A notification that repeats every session
 is one the person learns to ignore, and it is the only one in this loop that needs them.
 
-## What the allowlist is for
+## What the allowlist does
 
-`gh pr merge` is not in this command's `allowed-tools`, and the only `gh api` path
-pre-approved is the timeline count — the REST merge route
-(`gh api repos/{{REPO}}/pulls/<n>/merge -X PUT`) would otherwise merge a PR from a command
-whose contract says the reviewer never merges. `allowed-tools` is **pre-approval, not a
-deny**: a call outside it prompts a person, and under bypassed permissions it stops
-nothing. What it removes is the silent path.
+**Nothing.** The `allowed-tools` line above uses the comma-inside form,
+`Bash(gh pr list*, gh pr view*, …)`, and that form matches no command at all, so nothing on
+it is pre-approved. In default mode every call this command makes prompts a person; in auto
+mode **the auto-mode classifier** decides each one, and that is what has been passing this
+loop's commands. `gh pr merge` is absent from the line and so is the REST merge route
+(`gh api repos/{{REPO}}/pulls/<n>/merge -X PUT`), but that is the contract's rule — the
+reviewer never merges — held by the prose, not by the list.
 
-One route is still pre-approved: `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`.
-No glob admits runtime branch names while excluding the base branch. The contract names
-this hole and the repairs; do not read this section as saying it is closed.
+**Do not rewrite the line into one `Bash()` per rule** to make it match. That is the
+documented form, and it would create pre-approvals the prose has only been assuming — on
+the builder's line, `gh pr merge*` and `git merge*`. A widening of the permission surface
+dressed as a tidy-up; it has already happened once downstream. The line stays as it is.
+
+`git push origin HEAD:*` matches nothing either: `:*` is the trailing-wildcard spelling, so
+it reads `git push origin HEAD *` — neither `HEAD:{{BASE_BRANCH}}` nor `HEAD:<branch>`. What
+keeps a session off `{{BASE_BRANCH}}` is the four deny rules the contract lists, in
+`.claude/settings.json`; deny outranks allow in every mode and scope. The contract also
+names the three spellings they leave open.
 
 ## Stopping
 

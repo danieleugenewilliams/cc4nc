@@ -5,7 +5,7 @@ description: Watch the builder queue — place handed-back fixes, re-queue PRs w
 
 # /builder-watch — hold the builder end of the loop
 
-Arms a persistent watch over the things the builder owes an answer to on `{{REPO}}`. Read
+Arms a watch over the things the builder owes an answer to on `{{REPO}}`. Read
 `{{CONTRACT_PATH}}` first; this command executes that contract and does not restate it.
 
 Arguments: `$ARGUMENTS` → `[poll-seconds] [max-active]`, defaulting to `{{POLL}}` (minimum
@@ -14,9 +14,17 @@ Arguments: `$ARGUMENTS` → `[poll-seconds] [max-active]`, defaulting to `{{POLL
 
 ## Arm the watch
 
-One `Monitor`, `persistent: true`, described as "builder queue on {{REPO}}". It emits a
+One `Monitor`, at the maximum timeout, described as "builder queue on {{REPO}}". It emits a
 tagged line for three events, because all three need the builder and none needs a second
-poll loop:
+poll loop.
+
+**There is no `persistent` flag; a watch caps at 30 minutes.** Arm it at the maximum
+timeout, re-arm it with the same script when it expires, and **say on each re-arm that it
+re-armed.** A dead watch and a quiet queue look identical; the re-arm line is the only thing
+that tells them apart. A re-armed watch starts with an empty `prev`, so its first tick
+re-emits what is already labelled — the handlers below are written to expect that.
+
+The command:
 
 ```bash
 POLL={{POLL}}
@@ -185,10 +193,14 @@ and say nothing if the stopped-comment is already posted.
 ## Taking new work
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
-oldest open issue from `gh issue list --repo {{REPO}} --state open` that no PR already
+oldest open issue from `gh issue list --repo {{REPO}} --state open` that no open PR already
 references. {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
-`{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, and label it
-`{{LABEL_WAITING}}`. Never self-review.
+`{{TEST_CMD}}`, open the PR, and label it `{{LABEL_WAITING}}`. Never self-review.
+
+The PR body names the issue with **`Part of #<issue>`** when the PR does part of it, and
+**`Closes #<issue>`** only when it finishes the issue's last item. An issue that lists
+several things is several PRs; a partial PR that says `Closes` closes the whole issue on
+merge, and the remaining work vanishes from the backlog this section reads.
 
 ## Stopping
 
