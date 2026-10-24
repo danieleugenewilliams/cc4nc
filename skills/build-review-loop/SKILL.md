@@ -155,8 +155,15 @@ bash <skill-dir>/scripts/render.sh <repo-path> \
   TEST_CMD='<the command that passed in step 1>' \
   TOOL_GLOBS='<allowed-tools entries that command needs, e.g. npm*>' \
   MERGER=builder|person [MERGE_METHOD=merge|squash|rebase] [POLL=120] [ACTIVE=3] \
-  [CONTRACT_PATH=docs/review-loop.md]
+  [CONTRACT_PATH=docs/review-loop.md] [LABEL_BLOCKED=<…>] [REVIEWER_FIXES=yes|no]
 ```
+
+`LABEL_BLOCKED` is for a repo that already has a "waiting on a person's decision" label
+(e.g. `needs-a-human`): both watches skip it, and the merge check refuses it on the PR or
+on any issue the PR closes. `REVIEWER_FIXES=no` renders a findings-only reviewer, with no
+commit or push on its allowlist, for a repo whose rules say a reviewer never edits what it
+reviews. Ask about both in step 2 when the repo already has a written review model; the
+first port to one found both conflicts with the templates' defaults.
 
 It writes the contract to `CONTRACT_PATH`, the two commands to `.claude/commands/`, and
 refuses to finish if any `{{PLACEHOLDER}}` survives. The substitution covers the
@@ -206,3 +213,15 @@ Say these out loud rather than letting them be discovered.
   good enough." Three hand-backs is where a person comes in.
 - **Session naming is the only role enforcement.** Nothing stops someone opening a session
   named `reviewer` and running `/builder-watch` in it.
+- **Reviewing a PR runs the PR.** The reviewer runs the test command in a worktree checked
+  out from the branch, and a trusted worktree auto-runs any `.claude/` hook, `.mcp.json`, or
+  `CLAUDE.md` the branch carries — under the session's (bypassed) permissions. Where PRs come
+  only from your own builder that is your own code; where they can come from anywhere it is
+  code execution on the review host, and neither `allowed-tools` nor the session name is in
+  front of it. Launch the sessions with `--setting-sources user` so a branch's project config
+  cannot auto-run, and if the builder takes untrusted input, gate the merge verb behind a human
+  tap or one-shot token, not the session name. The rendered contract carries the full note.
+- **Merging is not deploying.** The loop's last state is *merged* — a repo that runs its own
+  merged code (a service, a bot, an agent that reads its own config) needs a separate step to
+  pull and restart what the change touched, and "merged" reported as "live" is a real hole.
+  The loop stops at the merge on purpose; merge→live is the operator's to wire.

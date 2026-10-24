@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh issue list*, gh issue view*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
+allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh pr create*, gh issue list*, gh issue view*, gh issue edit*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git checkout*, git switch*, git worktree*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
 description: Watch the builder queue — place handed-back fixes, re-queue PRs whose base has moved, and act on what is mergeable after the checks. Usage: /builder-watch [poll-seconds] [max-active]
 ---
 
@@ -31,11 +31,11 @@ while true; do
     printf '%s\n' "$labels" | grep -qx "$want" || ok=0
   done
   handback=$(gh pr list --repo "$R" --label '{{LABEL_CHANGES}}' --state open --limit 100 \
-             --json number,headRefOid \
-             --jq '.[] | "handback \(.number) \(.headRefOid[0:7])"' 2>/dev/null) || ok=0
+             --json number,headRefOid,labels \
+             --jq '.[] {{SKIP_BLOCKED_JQ}}| "handback \(.number) \(.headRefOid[0:7])"' 2>/dev/null) || ok=0
   passed=$(gh pr list --repo "$R" --label '{{LABEL_PASSED}}' --state open --limit 100 \
-           --json number,baseRefName,headRefName,headRefOid \
-           --jq '.[] | "\(.number)\t\(.baseRefName)\t\(.headRefName)\t\(.headRefOid[0:7])"' \
+           --json number,baseRefName,headRefName,headRefOid,labels \
+           --jq '.[] {{PASSED_ONLY_JQ}}| "\(.number)\t\(.baseRefName)\t\(.headRefName)\t\(.headRefOid[0:7])"' \
            2>/dev/null) || ok=0
   routed=""
   notes=""
@@ -85,6 +85,14 @@ ones this file sharpens:
   describe**, so every arm re-emits every PR carrying one. Neither handler may assume it is
   seeing the event for the first time: the hand-back handler checks whether the fix is
   already placed before placing it again, and the cap comment is posted once.
+- **The `stale`/`mergeable` candidates are PRs whose only flow label is `{{LABEL_PASSED}}`** —
+  the same permitted state merge check 1 uses, applied in the query. A PR carrying
+  `{{LABEL_PASSED}}` next to `{{LABEL_CHANGES}}` (findings win) or `{{LABEL_WAITING}}` (a
+  re-review is pending) is not a pass anyone can act on. Admitted as a candidate and behind
+  its base, it would be routed `stale`, whose swap leaves `{{LABEL_CHANGES}}` on and adds
+  `{{LABEL_WAITING}}` — the reviewer re-reads a head whose findings nobody placed, while the
+  same PR's `handback` has the builder placing them. Filtering by exclusion here would be the
+  list that widens silently when a label is added.
 - **`stale` and `mergeable` come out of one pass and are exclusive by construction.** Same
   candidate set, split on `behind_by`. Two independent queries emitted both for every
   behind PR on every tick.
@@ -117,7 +125,7 @@ dispatch again only if the trigger label is still on at a head that round did no
 A claim held past about half an hour is a round that did not come back: notify once, naming
 the PR, and hold it. Restarting the watch is the release, and that is a person's call.
 
-**`handback <n> <sha>`** — the reviewer could not place a finding. Read the PR's last
+**`handback <n> <sha>`** — {{HANDBACK_INTRO}} Read the PR's last
 review comment. Put the fix where it belongs, which may be a **different PR** if this repo
 stacks; *fix a finding in the PR that introduced it*. If the fix went elsewhere, that PR
 has to land before this one goes back in the queue — until it does, this diff is the one
@@ -138,7 +146,7 @@ away, less than the merge and two label calls take. In that window this same loo
 classifies it `mergeable`. Swapping first cannot do that: the label is gone before
 `behind_by` reaches 0.
 
-**Finish the push.** A rejected push means the reviewer pushed a fix while this ran; never
+**Finish the push.** A rejected push means another push landed on the branch while this ran; never
 `--force`. Fetch, merge again, push again — and do not leave it for the next tick, because
 after the swap this PR no longer carries `{{LABEL_PASSED}}` and the stale query will never
 return it a second time.
@@ -146,8 +154,11 @@ return it a second time.
 **`mergeable <n> <sha>`** — {{MERGEABLE_ACTION}}. The watch's line is a state read from one
 tick ago; the checks are against the PR as it is now:
 
-1. `{{LABEL_PASSED}}` is still on and `{{LABEL_WAITING}}` and `{{LABEL_CHANGES}}` are both
-   off. If not, a round moved them between the tick and now — do nothing.
+1. `{{LABEL_PASSED}}` is still the **only** flow label on the PR — of {{FLOW_LABELS}}, the
+   PR carries exactly one, and it is `{{LABEL_PASSED}}`.{{BLOCKED_ISSUE_CLAUSE}} Check it as
+   that permitted state, never as a list of labels that must be absent: an exclusion list
+   widens silently the day a label is added. If it does not hold, a round moved something
+   between the tick and now — do nothing.
 2. The head is the head the label was set at: on the PR's timeline the last
    `labeled {{LABEL_PASSED}}` event comes after the last commit, and the sha equals the one
    the reviewer's **latest LGTM** first line names. A commit after the labelling is a diff
@@ -185,10 +196,20 @@ and say nothing if the stopped-comment is already posted.
 ## Taking new work
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
-oldest open issue from `gh issue list --repo {{REPO}} --state open` that no PR already
-references. {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
-`{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, and label it
-`{{LABEL_WAITING}}`. Never self-review.
+oldest eligible open issue that no PR already references.{{NEW_WORK_SCOPE}} The list is bounded, sorted
+oldest-first, and filtered in the query rather than in prose:
+
+```bash
+{{NEW_WORK_CMD}}
+```
+
+`gh issue list` defaults to 30 issues, **newest** first, so an unbounded, unsorted call
+drops the oldest issue — the one this step is told to take — as soon as the backlog passes
+30. An issue that tracks other issues — an epic or tracker whose body lists its children —
+is not work: skip it and take the next. Its children are the work.{{BLOCKED_TAKE_RULE}} {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
+`{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, check that it
+took (`gh pr view <n> --repo {{REPO}} --json closingIssuesReferences` is not empty — a
+keyword in prose does not count), and label it `{{LABEL_WAITING}}`. Never self-review.
 
 ## Stopping
 

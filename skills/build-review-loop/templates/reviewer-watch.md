@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, gh api repos/{{REPO}}/issues/*/timeline*, gh label*, git fetch*, git worktree*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
+allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, gh api repos/{{REPO}}/issues/*/timeline*, gh label*, git fetch*, git worktree*, git rev-parse*, git log*, git show*, git diff*, git status*, {{REVIEWER_WRITE_TOOLS}}jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
 description: Watch the reviewer queue and review each PR that enters it. Usage: /reviewer-watch [poll-seconds] [max-active]
 ---
 
@@ -30,8 +30,8 @@ while true; do
   if ! labels=$(gh label list --repo "$R" --limit 100 --json name --jq '.[].name' 2>/dev/null) \
      || ! printf '%s\n' "$labels" | grep -qx '{{LABEL_WAITING}}' \
      || ! queue=$(gh pr list --repo "$R" --label '{{LABEL_WAITING}}' --state open --limit 100 \
-               --json number,headRefOid \
-               --jq '.[] | "\(.number) \(.headRefOid[0:7])"' 2>/dev/null); then
+               --json number,headRefOid,labels \
+               --jq '.[] {{SKIP_BLOCKED_JQ}}| "\(.number) \(.headRefOid[0:7])"' 2>/dev/null); then
     fails=$((fails+1))
     if [ "$fails" -eq 5 ]; then echo "watchdog reviewer 5 failed polls"; fi
     sleep "$POLL"; continue
@@ -76,6 +76,7 @@ map to a specific line here:
 - **`--repo`, `--state open`, `--limit 100`.** Bare `gh pr list` resolves from `cwd` and
   exits 1 anywhere else; the default limit is 30 and says nothing about what it dropped.
 - **Five consecutive failed polls emit one `watchdog` line**, reset on the first good poll.
+{{SKIP_BLOCKED_NOTE}}
 - **Only the `$ACTIVE` lowest-numbered PRs are eligible on any tick.** The cap counts queue
   membership, not dispatches: a PR whose round is running still holds a slot. Do not "fix"
   it to release early — that bounds nothing. Numeric sort, because as text `100` precedes
@@ -100,9 +101,7 @@ reads and the finding text never enter this session, which is what lets the watc
 day.
 
 **Before dispatching, check the claim.** Hold the set of PR numbers this session has a
-round running on. If the event names one of them, **drop the line** — it is this round's
-own fix push showing up as a fresh event. The window between pushing a fix and swapping the
-label is minutes, against a poll measured in minutes, so this is the common path.
+round running on. If the event names one of them, **drop the line**. {{REVIEWER_CLAIM_REASON}}
 
 **When a round ends, release the claim and re-read the PR once:**
 
@@ -128,21 +127,11 @@ Give the subagent the PR number and nothing it could not read for itself. It mus
    scratchpad: `git worktree add --detach <dir> <sha>`. The fetch is not hygiene: the sha
    comes from the API and the watch fired *because* the builder just pushed it, so the
    local clone has never seen that object. Detached because a branch checks out once and
-   the builder is very likely holding this one. Push with `git push origin HEAD:<branch>`,
-   which needs no local branch and never touches the builder's tree.
+   the builder is very likely holding this one.{{REVIEWER_PUSH_NOTE}}
 3. Review the PR — `gh pr diff <n> --repo {{REPO}}` and the files it touches.
 4. Reproduce each finding before believing it. *Review findings are claims.*
-5. Fix what this PR introduced, verify the fix, and run `{{TEST_CMD}}`. **Record the head
-   it expects to see at step 7**: `git rev-parse HEAD | cut -c1-7` after its own push if it
-   pushed, otherwise the sha from the event line. `cut`, not `--short=7`: `--short` is a
-   *minimum* width and git widens it when seven characters are ambiguous locally, so it
-   would compare eight characters against the `[0:7]` step 7 asks GitHub for and match
-   nothing.
-
-   A **rejected** push is step 7's condition arriving early: the builder pushed during the
-   review. Never `--force` — the commit that would go is the builder's. Leave the push
-   undone and take step 7's refusal.
-6. Post **one comment on that PR** carrying only that PR's findings and what it changed.
+{{REVIEWER_STEP5}}
+6. Post **one comment on that PR** carrying only that PR's findings{{REVIEWER_COMMENT_TAIL}}.
 7. **Re-read the head before labelling**, and label only if it matches the sha step 5
    recorded:
 
@@ -150,17 +139,16 @@ Give the subagent the PR number and nothing it could not read for itself. It mus
    gh pr view <n> --repo {{REPO}} --json headRefOid --jq '.headRefOid[0:7]'
    ```
 
-   Compare against **step 5's recorded head, not the event line**. A review that found
-   something fixed and pushed, so on that path the head has always moved, by the reviewer's
-   own commit; comparing to the event line would refuse to label every review that did
-   work.
+{{REVIEWER_STEP7_NOTE}}
 
-   A head matching neither is someone else's push while the review ran. Say so in the
+   A head that does not match is someone else's push while the review ran. Say so in the
    comment, **leave `{{LABEL_WAITING}}` on**, and label nothing. The next tick fires on the
    new sha because the loop keys on the sha.
 8. Otherwise label exactly one of `{{LABEL_PASSED}}` (with **LGTM `<sha>`** on the first
    line of the comment, naming the head from step 7) or `{{LABEL_CHANGES}}`, and remove
-   `{{LABEL_WAITING}}` either way.
+   `{{LABEL_WAITING}}` either way. Labelling `{{LABEL_CHANGES}}` also takes
+   `{{LABEL_PASSED}}` off if an earlier round left it: it means *the review passed*, so
+   leaving it on a failing re-review puts two verdicts on one PR.
 9. **Remove its worktree** — `git worktree remove`. Not because it holds the branch: step 2
    detached precisely so it holds nothing. It is that the tree stays in the registry and on
    disk and nothing complains, so every round leaves one unless the round removes it.
@@ -198,9 +186,7 @@ whose contract says the reviewer never merges. `allowed-tools` is **pre-approval
 deny**: a call outside it prompts a person, and under bypassed permissions it stops
 nothing. What it removes is the silent path.
 
-One route is still pre-approved: `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`.
-No glob admits runtime branch names while excluding the base branch. The contract names
-this hole and the repairs; do not read this section as saying it is closed.
+{{REVIEWER_PUSH_HOLE}}
 
 ## Stopping
 

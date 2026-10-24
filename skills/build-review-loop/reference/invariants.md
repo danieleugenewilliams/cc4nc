@@ -51,8 +51,10 @@ that reads it. *An agent that reads a reason it can see is false skips the step.
     nothing complains if you don't — thirteen abandoned trees accumulated in one repo
     before anyone looked.
 17. **Re-read the head before labelling, and compare against the head this round recorded,
-    not the one the event carried.** A review that fixed something has already moved the
-    head with its own commit.
+    not the one the event carried.** Where the reviewer places fixes, a review that fixed
+    something has already moved the head with its own commit; in every loop, the builder
+    may have pushed while the review ran. The recorded head is the only one this round
+    read.
 18. **Never force-push past a rejection.** The commit that would go is the other session's.
 19. **Stop after three hand-backs, say so once, and notify.** Two agents can pass work back
     and forth forever. Once, because the item stays in the queue and every new session

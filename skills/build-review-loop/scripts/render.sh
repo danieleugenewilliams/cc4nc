@@ -15,6 +15,12 @@
 # Optional keys (defaults shown):
 #   POLL=120  ACTIVE=3  MERGE_METHOD=merge  CONTRACT_PATH=docs/review-loop.md
 #   LABEL_CLAIMED=   (empty = no claimed state; set when builders run in parallel)
+#   LABEL_BLOCKED=   (empty = no blocked state; set when the repo has a label meaning
+#                     "waiting on a decision only a person can make", e.g. needs-a-human)
+#   NEW_WORK_LABEL=  (empty = any open issue; set to restrict what the builder takes, e.g. bug)
+#   NEW_WORK_REASON= (required with NEW_WORK_LABEL: one sentence saying why, rendered next to the rule)
+#   REVIEWER_FIXES=yes  (no = the reviewer posts findings only and never edits the PR;
+#                        every finding goes back to the builder as LABEL_CHANGES)
 #
 # Writes: <repo>/<CONTRACT_PATH>, <repo>/.claude/commands/reviewer-watch.md,
 #         <repo>/.claude/commands/builder-watch.md. Refuses to leave any {{PLACEHOLDER}}.
@@ -22,17 +28,18 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 repo="${1:?repo path}"; shift
-declare -A v=( [POLL]=120 [ACTIVE]=3 [MERGE_METHOD]=merge [CONTRACT_PATH]=docs/review-loop.md [LABEL_CLAIMED]= )
+declare -A v=( [POLL]=120 [ACTIVE]=3 [MERGE_METHOD]=merge [CONTRACT_PATH]=docs/review-loop.md [LABEL_CLAIMED]= [LABEL_BLOCKED]= [REVIEWER_FIXES]=yes [NEW_WORK_LABEL]= [NEW_WORK_REASON]= )
 for kv in "$@"; do v["${kv%%=*}"]="${kv#*=}"; done
 for k in REPO BASE_BRANCH LABEL_WAITING LABEL_PASSED LABEL_CHANGES TEST_CMD TOOL_GLOBS MERGER; do
   [ -n "${v[$k]:-}" ] || { echo "missing $k" >&2; exit 1; }
 done
 case "${v[MERGER]}" in builder|person) ;; *) echo "MERGER must be builder or person" >&2; exit 1;; esac
+case "${v[REVIEWER_FIXES]}" in yes|no) ;; *) echo "REVIEWER_FIXES must be yes or no" >&2; exit 1;; esac
 
 # Prose fragments that depend on a choice, so the templates read cleanly either way.
 if [ "${v[MERGER]}" = builder ]; then
-  v[MERGER_SENTENCE]="The **builder** merges, on \`mergeable\` and only after the checks below."
-  v[MERGEABLE_ACTION]="run the four checks below and merge"
+  v[MERGER_SENTENCE]="The **builder** merges, on \`mergeable\` and only after the checks above."
+  v[MERGEABLE_ACTION]="run the four checks below; merge only if all four hold"
   v[MERGE_TOOL]="gh pr merge*, "
   v[MERGE_PARAGRAPHS]=$(cat <<'P'
 Merge with `gh pr merge <n> --repo {{REPO}} --{{MERGE_METHOD}}`, never `--delete-branch` on a
@@ -42,8 +49,9 @@ retry with other flags, resolve nothing, and never reach for
 `git push origin HEAD:{{BASE_BRANCH}}`. Leave the labels as they are — the pass is still
 true of the head — and notify: a merge that fails is a PR that needs a person.
 
-Note what `gh pr merge*` on the allowlist admits: `--squash` and `--delete-branch` too,
-because the number comes before the flags and no glob refuses a trailing flag. The prose is
+Note what `gh pr merge*` on the allowlist admits: every merge-method flag, not just
+`--{{MERGE_METHOD}}`, and `--delete-branch` too, because the number comes before the flags
+and no glob refuses a trailing flag. The prose is
 what keeps those out. And `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`, which
 lands everything and skips every check; the contract names that hole and its repairs.
 P
@@ -61,11 +69,201 @@ P
 )
 fi
 if [ -n "${v[LABEL_CLAIMED]}" ]; then
-  v[CLAIMED_ROW]="| \`${v[LABEL_CLAIMED]}\` | builder | A builder has taken this item and not yet opened its PR. Durable because builders run in parallel and one session's memory is invisible to another. |"
-  v[CLAIMED_RULE]="Before starting an item, label it \`${v[LABEL_CLAIMED]}\`; an item already carrying it belongs to someone else. Remove it when the PR is labelled \`${v[LABEL_WAITING]}\`."
+  v[CLAIMED_ROW]=$'\n'"| \`${v[LABEL_CLAIMED]}\` | builder | On the **issue**: a builder has taken this item and not yet opened its PR. Durable because builders run in parallel and one session's memory is invisible to another. |"
+  v[CLAIMED_RULE]="Before starting an item, label the **issue** \`${v[LABEL_CLAIMED]}\` (\`gh issue edit <n> --add-label\`); an issue already carrying it belongs to someone else, and the poll that picks work is \`gh issue list\` filtered to issues without it. Remove it from the issue when the PR is labelled \`${v[LABEL_WAITING]}\`."
 else
   v[CLAIMED_ROW]=""
   v[CLAIMED_RULE]="One builder session dispatches everything, so a claim is held in that session's memory; a restart re-derives the queue from labels. If builders ever run in parallel, add a durable claimed label first."
+fi
+
+# Taking new work: bounded, oldest-first, and filtered in the query. Claimed and blocked
+# issues are excluded by the search, and NEW_WORK_LABEL narrows the pool (e.g. bug) when
+# the person does not want the whole backlog built.
+q="sort:created-asc"
+[ -n "${v[LABEL_CLAIMED]}" ] && q="$q -label:\"${v[LABEL_CLAIMED]}\""
+[ -n "${v[LABEL_BLOCKED]}" ] && q="$q -label:\"${v[LABEL_BLOCKED]}\""
+lf=""; [ -n "${v[NEW_WORK_LABEL]}" ] && lf=" --label '${v[NEW_WORK_LABEL]}'"
+v[NEW_WORK_CMD]="gh issue list --repo ${v[REPO]} --state open --limit 200$lf --search '$q' --json number,title --jq '.[] | \"\\(.number) \\(.title)\"'"
+if [ -n "${v[LABEL_CLAIMED]}" ]; then
+  v[LABELS_INTRO_EXTRA]=" The exception is the claimed label, \`${v[LABEL_CLAIMED]}\`: it marks an **issue** a builder has taken before any PR exists, and comes off once the PR is labelled."
+else
+  v[LABELS_INTRO_EXTRA]=""
+fi
+if [ -n "${v[LABEL_BLOCKED]}" ]; then
+  v[LABELS_INTRO_EXTRA]="${v[LABELS_INTRO_EXTRA]} The blocked label, \`${v[LABEL_BLOCKED]}\`, may sit on either the issue or the PR, and blocks from both."
+fi
+
+# NEW_WORK_LABEL narrows what the builder takes. The reason has to travel with the rule:
+# a filter whose reason lives only in a PR comment is the one the next agent removes.
+if [ -n "${v[NEW_WORK_LABEL]}" ]; then
+  [ -n "${v[NEW_WORK_REASON]:-}" ] || { echo "NEW_WORK_LABEL needs NEW_WORK_REASON (why the builder's scope is narrowed)" >&2; exit 1; }
+  v[NEW_WORK_SCOPE]=" **Only issues labelled \`${v[NEW_WORK_LABEL]}\` are taken** — ${v[NEW_WORK_REASON]} Everything else in the backlog is a person's to assign: they tell a builder session to take a specific issue, and the builder claims it as usual, or they widen this scope. A person does not assign work by labelling an issue \`${v[LABEL_CLAIMED]:-claimed}\` — that label means a builder already holds the issue, and every new-work query skips it, so an issue labelled that way is stranded."
+  v[NEW_WORK_SCOPE_SHORT]=", restricted to issues labelled \`${v[NEW_WORK_LABEL]}\` (${v[NEW_WORK_REASON]%.})"
+else
+  v[NEW_WORK_SCOPE]=""
+  v[NEW_WORK_SCOPE_SHORT]=""
+fi
+
+# The stale/mergeable candidate set: PRs whose only flow label is the passed one.
+fl="\"${v[LABEL_WAITING]}\",\"${v[LABEL_PASSED]}\",\"${v[LABEL_CHANGES]}\""
+[ -n "${v[LABEL_CLAIMED]}" ] && fl="$fl,\"${v[LABEL_CLAIMED]}\""
+[ -n "${v[LABEL_BLOCKED]}" ] && fl="$fl,\"${v[LABEL_BLOCKED]}\""
+v[PASSED_ONLY_JQ]="| select([.labels[].name | select(IN($fl))] == [\"${v[LABEL_PASSED]}\"]) "
+
+# The flow labels, named in full. The merge check is "the passed label is the only one of
+# these on the PR" — a permitted state, not a list of labels that must be absent. An
+# exclusion list silently widens the moment a label is added and nobody revisits it; one
+# repo's predicate forgot two labels that way, twice, and would have merged past a gate.
+flow="\`${v[LABEL_WAITING]}\`, \`${v[LABEL_PASSED]}\`, \`${v[LABEL_CHANGES]}\`"
+[ -n "${v[LABEL_CLAIMED]}" ] && flow="$flow, \`${v[LABEL_CLAIMED]}\`"
+[ -n "${v[LABEL_BLOCKED]}" ] && flow="$flow, \`${v[LABEL_BLOCKED]}\`"
+v[FLOW_LABELS]="$flow"
+
+if [ -n "${v[LABEL_BLOCKED]}" ]; then
+  B="${v[LABEL_BLOCKED]}"
+  # Without a claimed label these clauses have nothing to name; drop them rather than
+  # render a stand-in like `a claim` that reads as a label the repo does not have.
+  CLAIM_SWAP=""; CLAIM_SKIP_NOTE=""
+  if [ -n "${v[LABEL_CLAIMED]}" ]; then
+    CLAIM_SWAP=" (replacing \`${v[LABEL_CLAIMED]}\` if the issue carries it)"
+    CLAIM_SKIP_NOTE=" The one label a reviewer does not skip is \`${v[LABEL_CLAIMED]}\` next to \`${v[LABEL_WAITING]}\`: that PR was handed off and the claim was left behind, so review it and say so in the comment rather than leave it stalled unseen."
+  fi
+  v[BLOCKED_ROW]=$'\n'"| \`$B\` | either | Blocked on a decision only a person can make — an open product question, an unratified spec, a release gate. On the issue or the PR. Not reviewable work and not buildable work: both sessions leave it alone until a person removes it. |"
+  v[BLOCKED_TABLE_ROWS]=$'\n'"| any | the work needs a decision, not code | either | adds \`$B\`, says what the decision is, stops |
+| \`$B\` | the person decides and removes it | person | the state it was in before |"
+  v[BLOCKED_RULE]="Blocks: when the work turns out to need a decision rather than code, add \`$B\`${CLAIM_SWAP}, say in a comment what the decision is, and stop. Do not guess and keep building. The builder takes no issue carrying it, the reviewer skips a PR carrying it, and the merge check refuses it on the PR **or** on any issue the PR closes. Only a person takes it off."
+  v[BLOCKED_TAKE_RULE]=" Skip any issue carrying \`$B\`: it is waiting on a person, not on capacity."
+  v[SKIP_BLOCKED_JQ]="| select(any(.labels[].name; . == \"$B\") | not) "
+  v[SKIP_BLOCKED_NOTE]="- **PRs carrying \`$B\` are filtered out of the queue.** They wait on a decision, not a review.${CLAIM_SKIP_NOTE}"
+else
+  v[BLOCKED_ROW]=""
+  v[BLOCKED_TABLE_ROWS]=""
+  v[BLOCKED_RULE]=""
+  v[BLOCKED_TAKE_RULE]=""
+  v[SKIP_BLOCKED_JQ]=""
+  v[SKIP_BLOCKED_NOTE]=""
+fi
+
+# With a claimed or blocked label, flow labels can sit on the issue too, so the merge check
+# reads the closed issues as a permitted state as well: they carry none. Refusing only the
+# blocked label there is an exclusion list of one — it merges "passed, then more work
+# assigned" (passed on the PR, the claim back on the issue).
+if [ -n "${v[LABEL_CLAIMED]}${v[LABEL_BLOCKED]}" ]; then
+  if [ -n "${v[LABEL_CLAIMED]}" ]; then
+    ISSUE_CLAUSE_WHY=" The claim comes off the issue at handoff, so a flow label there is new work assigned after the pass or a gate filed on the issue; either way, not mergeable."
+  else
+    ISSUE_CLAUSE_WHY=" A flow label there is a gate filed on the issue after the pass; not mergeable."
+  fi
+  v[BLOCKED_ISSUE_CLAUSE]=" And no issue the PR closes carries **any** flow label — read them with \`gh pr view <n> --json closingIssuesReferences\` and \`gh issue view\`.${ISSUE_CLAUSE_WHY}"
+else
+  v[BLOCKED_ISSUE_CLAUSE]=""
+fi
+
+if [ "${v[REVIEWER_FIXES]}" = yes ]; then
+  v[REVIEWER_SUMMARY]="reads each PR, fixes what it can, and hands back what it cannot."
+  v[CHANGES_MEANING]="Findings the reviewer could not place here. Back to the builder."
+  v[CHANGES_TRANSITION]="review finds work only the builder can place"
+  v[REVIEWER_WRITE_TOOLS]="git add*, git commit*, git push origin HEAD:*, "
+  v[HANDBACK_INTRO]="the reviewer could not place a finding."
+  v[REVIEWER_CLAIM_REASON]="It is this round's own fix push showing up as a fresh event. The window between pushing a fix and swapping the label is minutes, against a poll measured in minutes, so this is the common path."
+  v[REVIEWER_CONTRACT_SECTION]=$(cat <<'P'
+Polls `gh pr list --label {{LABEL_WAITING}}`. Reviews, reproduces each finding before
+believing it — *review findings are claims* — fixes what this PR introduced, verifies the
+fix, runs `{{TEST_CMD}}`, and posts **one comment on that PR** with only that PR's findings
+and what it changed. Then labels: `{{LABEL_PASSED}}` with **LGTM `<sha>`** on the first
+line if nothing is outstanding; `{{LABEL_CHANGES}}` with the findings listed if something
+is. **The LGTM names the head it vouches for** — the sha re-read just before labelling,
+which is the reviewer's own fix commit if it pushed one. An LGTM naming no sha is a pass
+nobody can act on.
+
+The reviewer verifies its own fixes, and that is deliberate. The alternative is a fourth
+state and a second round trip to bless a typo. Its repairs are covered by the *verify* it
+already owes, and the comment naming them is on the PR before anything merges.
+
+`{{LABEL_CHANGES}}` does not mean *the review failed*. It means *there is work here only
+the builder can put in the right place*: a decision that is a person's, or a repair that
+belongs in an earlier PR.
+P
+)
+  v[TWO_SESSIONS]=$(cat <<'P'
+A branch checks out once. The reviewer works in a **detached** worktree at the sha it
+reviewed (`git worktree add --detach`), pushes with `git push origin HEAD:<branch>`, and
+removes the worktree when its comment is posted. The builder fetches before touching a
+branch it has handed off. Neither commits into the other's tree, and neither force-pushes:
+the commit that would go is the other session's.
+P
+)
+  v[REVIEWER_COMMENT_TAIL]=" and what it changed"
+  v[REVIEWER_PUSH_NOTE]=" Push with \`git push origin HEAD:<branch>\`, which needs no local branch and never touches the builder's tree."
+  v[REVIEWER_STEP5]=$(cat <<'P'
+5. Fix what this PR introduced, verify the fix, and run `{{TEST_CMD}}`. **Record the head
+   it expects to see at step 7**: `git rev-parse HEAD | cut -c1-7` after its own push if it
+   pushed, otherwise the sha from the event line. `cut`, not `--short=7`: `--short` is a
+   *minimum* width and git widens it when seven characters are ambiguous locally, so it
+   would compare eight characters against the `[0:7]` step 7 asks GitHub for and match
+   nothing.
+
+   A **rejected** push is step 7's condition arriving early: the builder pushed during the
+   review. Never `--force` — the commit that would go is the builder's. Leave the push
+   undone and take step 7's refusal.
+P
+)
+  v[REVIEWER_STEP7_NOTE]=$(cat <<'P'
+   Compare against **step 5's recorded head, not the event line**. A review that found
+   something fixed and pushed, so on that path the head has always moved, by the reviewer's
+   own commit; comparing to the event line would refuse to label every review that did
+   work.
+P
+)
+  v[REVIEWER_PUSH_HOLE]=$(cat <<'P'
+One route is still pre-approved: `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`.
+No glob admits runtime branch names while excluding the base branch. The contract names
+this hole and the repairs; do not read this section as saying it is closed.
+P
+)
+else
+  v[REVIEWER_SUMMARY]="reads each PR and hands back every finding. It never edits what it reviews."
+  v[CHANGES_MEANING]="The review found something unresolved. Back to the builder, who places every fix."
+  v[CHANGES_TRANSITION]="review finds anything unresolved"
+  v[REVIEWER_WRITE_TOOLS]=""
+  v[HANDBACK_INTRO]="the reviewer found something. By contract it fixed nothing, so every finding is yours to place."
+  v[REVIEWER_CLAIM_REASON]="This reviewer pushes nothing, so a second event for a PR under review is the builder pushing while the round runs. The round's step 7 sees the moved head and refuses to label, and the re-read on release dispatches the new head — a second concurrent round would only race the first to the comment."
+  v[REVIEWER_CONTRACT_SECTION]=$(cat <<'P'
+Polls `gh pr list --label {{LABEL_WAITING}}`. Reviews, reproduces each finding before
+believing it — *review findings are claims* — runs `{{TEST_CMD}}` against the head it read,
+and posts **one comment on that PR** with only that PR's findings. Then labels:
+`{{LABEL_PASSED}}` with **LGTM `<sha>`** on the first line if there are no findings;
+`{{LABEL_CHANGES}}` with the findings listed if there are any. **The LGTM names the head it
+vouches for** — the sha it read, re-read just before labelling. An LGTM naming no sha is a
+pass nobody can act on.
+
+**The reviewer never fixes what it is reviewing** — not a typo, not the reviewed document
+itself. A session that reviews and then edits is both roles at once, which is the thing
+this loop exists to prevent, and its push races the builder's own branch. That costs a
+round trip for a one-character fix, and the round trip is the price of a second opinion
+that stays a second opinion.
+
+When a later round fails a PR that an earlier round passed, the reviewer also takes
+`{{LABEL_PASSED}}` off. Leaving it on puts two verdicts on one PR, and one of them is false.
+P
+)
+  v[TWO_SESSIONS]=$(cat <<'P'
+A branch checks out once. The reviewer reads in a **detached** worktree at the sha it
+reviewed (`git worktree add --detach`), runs the verification command there, and removes
+the worktree when its comment is posted. It commits nothing and pushes nothing, so the
+branch has one writer: the builder.
+P
+)
+  v[REVIEWER_PUSH_NOTE]=" It never pushes: this reviewer places no fixes."
+  v[REVIEWER_STEP5]=$(cat <<'P'
+5. Run `{{TEST_CMD}}` in the worktree. **Fix nothing** — not a typo, not a comment. Every
+   finding goes into the comment for the builder to place. **Record the head it expects to
+   see at step 7**: the sha from the event line, since this round pushes nothing.
+P
+)
+  v[REVIEWER_STEP7_NOTE]="   This round pushed nothing, so the recorded head is the event line's sha."
+  v[REVIEWER_COMMENT_TAIL]=""
+  v[REVIEWER_PUSH_HOLE]="No push is pre-approved either: this reviewer places no fixes, so \`git push\`, \`git add\` and \`git commit\` are left off the list. A call to one prompts a person — which is the point, since it would be the reviewer editing what it reviews."
 fi
 
 render() {  # $1 template, $2 output
