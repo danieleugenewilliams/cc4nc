@@ -21,8 +21,13 @@ minimum `60`. **Substitute it into the script before arming.**
 - **Never sets or removes `{{LABEL_WAITING}}`, `{{LABEL_PASSED}}` or `{{LABEL_CHANGES}}`.**
   Those labels are the review record, and a coordinator that touches them is a third
   reviewer nobody asked for. The only labels it changes are `{{LABEL_BLOCKED}}` (holds,
-  questions, proposals) and `{{LABEL_PAUSED}}`. `gh issue edit*` and `gh pr edit*` on the
-  allowlist admit any label; this paragraph is what keeps the review labels out.
+  questions, proposals) and `{{LABEL_PAUSED}}`. This paragraph is what keeps the review
+  labels out, not the allowlist: `gh issue edit*` and `gh pr edit*` would admit any label
+  even if the line matched, and it does not — the `allowed-tools` line above uses the
+  comma-inside form, `Bash(gh issue list*, gh issue view*, …)`, which matches no command at
+  all, so nothing on it is pre-approved. In default mode every call prompts a person; in auto
+  mode the auto-mode classifier decides each one. Do not rewrite the line into one `Bash()`
+  per rule to make it match: that would pre-approve label edits this paragraph forbids.
 - **Never relays a merge approval.** "merge #N" counts only when the person types it in the
   builder session. Passing it on is a permission decision this session cannot make, however
   exactly it quotes them. Tell the person where to type it instead.
@@ -174,7 +179,12 @@ if something should change, propose it and let the person approve.
 
 ## Watch what happens
 
-Arm one `Monitor`, described as "coordinator watch on {{REPO}}":
+**There is no `persistent` flag; a watch caps at 30 minutes.** Arm it at the maximum
+timeout, re-arm it as *Re-arming* below says when it expires, and **say on each re-arm that
+it re-armed.** A dead watch and a quiet loop look identical; the re-arm line is the only
+thing that tells them apart.
+
+Arm one `Monitor`, at the maximum timeout, described as "coordinator watch on {{REPO}}":
 
 ```bash
 POLL={{POLL}}

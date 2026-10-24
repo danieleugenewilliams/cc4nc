@@ -216,8 +216,13 @@ the child left the reviewer's queue when its pass was set.
 
 ## What this loop does not give you
 
-- **`allowed-tools` is pre-approval, not a deny.** A call outside the list prompts a
-  person; under bypassed permissions it stops nothing. It removes the silent path.
+- **The `allowed-tools` lines in the loop's commands pre-approve nothing.** They use the
+  comma-inside form, `Bash(gh pr list*, gh pr view*, …)`, and that form matches no command
+  at all. The loop runs because its sessions run in auto mode and **the auto-mode
+  classifier passes the commands**; in default mode every call prompts a person. Do not
+  rewrite the lines into one `Bash()` per rule to make them match: that would create the
+  `gh pr merge*` and `git merge*` pre-approvals the prose has only been assuming. They are
+  left as they are on purpose.
 - **Reviewing a PR runs the PR.** The reviewer checks the branch out into a worktree and
   runs `{{TEST_CMD}}` against it — which executes that branch's own test and build scripts,
   package-manager lifecycle hooks included — and the moment the worktree is trusted, any
@@ -232,17 +237,16 @@ the child left the reviewer's queue when its pass was set.
   watch commands into `~/.claude/commands/`. And if the builder itself takes untrusted input,
   gate the merge verb behind something the session cannot call (a human tap, a one-shot
   token) rather than the session name.
-- **`git push origin HEAD:*` admits `HEAD:{{BASE_BRANCH}}`**, which lands everything and
-  skips every check. No glob admits arbitrary runtime branch names while excluding the base
-  branch. The two real repairs are decisions, not edits: drop the push glob and let every
-  push prompt, or add a `PreToolUse` hook that refuses pushes to `{{BASE_BRANCH}}`. Branch
-  protection on the remote is the third and the only one enforced off this machine.
+- **`git push origin HEAD:*` matches nothing either.** `:*` is the trailing-wildcard
+  spelling, so the entry reads `git push origin HEAD *` — neither `HEAD:{{BASE_BRANCH}}` nor
+  the branch pushes it was put there to allow. What keeps a session off `{{BASE_BRANCH}}` is
+  the deny rules below.
 - **Session names are trusted, not verified.** Any session renamed to one of the exact names
   above can send pointers. The safeguard is that a pointer only says where to look; what a
   session acts on is what GitHub says.
 - **Watches expire.** The `Monitor` behind each command can end — in this harness, after
-  about thirty minutes — and nothing announces it. Each command says how to re-arm, and a
-  stopped watch still looks exactly like an empty queue.
+  about thirty minutes, and there is no `persistent` flag — and nothing announces it. Each
+  command says how to re-arm, and a stopped watch still looks exactly like an empty queue.
 - **The loop converges; it does not decide.** Nothing here can mechanise "this feature is
   good enough." A third hand-back is where a person comes in.
 - **Merging is not deploying.** The last state here is *merged* — that lands code, it does
@@ -251,3 +255,39 @@ the child left the reviewer's queue when its pass was set.
   change touched), and "merged" reported as "live" is where this project's worst latent bug sat
   undeployed for hours. The loop stops at the merge on purpose; wiring merge→live — and knowing
   which changes go live on next read versus which need a restart — is yours.
+
+## Keeping sessions off `{{BASE_BRANCH}}`: deny rules
+
+The control is four `deny` rules in `.claude/settings.json`, because **deny outranks allow
+in every mode and scope**:
+
+```
+Bash(git push * {{BASE_BRANCH}})
+Bash(git push * {{BASE_BRANCH}} *)
+Bash(git push *:{{BASE_BRANCH}})
+Bash(git push *:{{BASE_BRANCH}} *)
+```
+
+Four because a refspec names `{{BASE_BRANCH}}` either bare or right of a colon, and either
+can carry a trailing flag. Two shapes times two positions.
+
+They sit **beside** any `Bash(git push --force-with-lease *)` allow rather than replacing
+it. That allow is what lets a session rewind its own branch under a lease; removing it
+reopens a different problem, and the deny covers the `{{BASE_BRANCH}}` case the allow would
+otherwise reach.
+
+Three spellings escape, recorded rather than chased: `git -C . push`, and
+`refs/heads/{{BASE_BRANCH}}` on either side of the refspec. Each has the standing every push
+had before: a prompt in default mode, the classifier in auto mode.
+
+Verify them with `scripts/check-deny.sh` from the build-review-loop skill, run from the repo
+root. It hands each spelling to a fresh `claude -p --permission-mode default`, reads the
+deny rules off this repo's real settings file with `jq`, loads a wide `Bash(git push *)`
+allow on purpose (or a deny and a no-match look the same), and puts an echo-only `git` first
+on `PATH` so nothing contacts a remote. A row the session did not run verbatim is a FAIL,
+not a pass, and the script refuses unless it reports on every row.
+
+**Branch protection on the remote is the cleaner fix**, and the only one enforced off this
+machine; on a paid plan or a public repo, reach for it first. It was unavailable on the plan
+these rules were proven on: 403, "Upgrade to GitHub Pro or make this repository public." A
+`PreToolUse` hook that refuses pushes to `{{BASE_BRANCH}}` is a further option.

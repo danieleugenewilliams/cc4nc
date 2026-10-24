@@ -130,11 +130,15 @@ retry with other flags, resolve nothing, and never reach for
 `git push origin HEAD:{{BASE_BRANCH}}`. Leave the labels as they are — the pass is still
 true of the head — and notify: a merge that fails is a PR that needs a person.
 
-Note what `gh pr merge*` on the allowlist admits: every merge-method flag, not just
-`--{{MERGE_METHOD}}`, and `--delete-branch` too, because the number comes before the flags
-and no glob refuses a trailing flag. The prose is
-what keeps those out. And `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`, which
-lands everything and skips every check; the contract names that hole and its repairs.
+`gh pr merge*` appears on this command's allowlist, but the comma-inside form that line
+uses matches nothing, so the merge is not pre-approved: a person approves it, or in auto
+mode the classifier decides — and it can refuse, as the next paragraph says. Do not rewrite
+the line into one `Bash()` per rule to make it match — that would pre-approve `gh pr merge*`
+with every merge-method flag, not just `--{{MERGE_METHOD}}`, and with `--admin` and
+`--delete-branch` (the number comes before the flags and no glob refuses a trailing flag),
+and `git merge*` with it. The prose is what keeps those flags out. `git push origin HEAD:*`
+matches nothing either; a push to `{{BASE_BRANCH}}` is stopped by the deny rules the
+contract lists.
 
 **A merge the session's permission mode refuses waits for the person's word, typed in this
 session.** Auto mode refuses `gh pr merge` as a merge without review even when all five
@@ -152,9 +156,9 @@ else
   v[MERGE_TOOL]=""
   v[MERGE_PARAGRAPHS]=$(cat <<'P'
 Notify the person with the PR number and the sha the checks passed at, and stop. No merge
-verb is pre-approved for this command. `git push origin HEAD:*` still matches
-`HEAD:{{BASE_BRANCH}}`, which lands everything and skips every check; the contract names
-that hole and its repairs.
+verb is on this command's allowlist — and that allowlist's comma-inside form pre-approves
+nothing anyway. A push to `{{BASE_BRANCH}}` is stopped by the deny rules the contract
+lists, not by `git push origin HEAD:*`, which matches nothing.
 P
 )
 fi
@@ -310,9 +314,11 @@ P
 P
 )
   v[REVIEWER_PUSH_HOLE]=$(cat <<'P'
-One route is still pre-approved: `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`.
-No glob admits runtime branch names while excluding the base branch. The contract names
-this hole and the repairs; do not read this section as saying it is closed.
+`git push origin HEAD:*` matches nothing either: `:*` is the trailing-wildcard spelling, so
+it reads `git push origin HEAD *` — neither `HEAD:{{BASE_BRANCH}}` nor `HEAD:<branch>`. What
+keeps a session off `{{BASE_BRANCH}}` is the four deny rules the contract lists, in
+`.claude/settings.json`; deny outranks allow in every mode and scope. The contract also
+names the three spellings they leave open.
 P
 )
 else
@@ -357,7 +363,7 @@ P
 )
   v[REVIEWER_STEP7_NOTE]="   This round pushed nothing, so the recorded head is the event line's sha."
   v[REVIEWER_COMMENT_TAIL]=""
-  v[REVIEWER_PUSH_HOLE]="No push is pre-approved either: this reviewer places no fixes, so \`git push\`, \`git add\` and \`git commit\` are left off the list. A call to one prompts a person — which is the point, since it would be the reviewer editing what it reviews."
+  v[REVIEWER_PUSH_HOLE]="\`git push\`, \`git add\` and \`git commit\` are left off the list as well: this reviewer places no fixes. With nothing on the line pre-approved, leaving them off changes no permission — it records the rule, and the prose is what holds it. A call to one would be the reviewer editing what it reviews; do not make it. The deny rules the contract lists still keep any push off \`${v[BASE_BRANCH]}\`."
 fi
 
 render() {  # $1 template, $2 output
