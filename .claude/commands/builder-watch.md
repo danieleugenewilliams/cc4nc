@@ -162,7 +162,7 @@ tick ago; the checks are against the PR as it is now:
 4. `behind_by` is 0 against `main`. If not, the tick was stale itself; the
    `stale` handler is the one to run.
 
-The **builder** merges, on `mergeable` and only after the checks below.
+The **builder** merges, on `mergeable` and only after the checks above.
 
 Merge with `gh pr merge <n> --repo danieleugenewilliams/cc4nc --merge`, never `--delete-branch` on a
 stack, never `--admin`. Say what landed, at which sha. Children the landing staled show up
@@ -195,7 +195,7 @@ and say nothing if the stopped-comment is already posted.
 ## Taking new work
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
-oldest open issue from `gh issue list --repo danieleugenewilliams/cc4nc --state open` that no PR already
+oldest open issue from `gh issue list --repo danieleugenewilliams/cc4nc --state open --limit 100 --search 'sort:created-asc -label:in-progress'` that no PR already
 references. Before starting an item, label the **issue** `in-progress` (`gh issue edit <n> --add-label`); an issue already carrying it belongs to someone else, and the poll that picks work is `gh issue list` filtered to issues without it. Remove it from the issue when the PR is labelled `ready-for-review`. Branch from `main`, do the work in a subagent, run
 `bash scripts/check.sh`, open the PR with `Closes #<issue>` in the body, and label it
 `ready-for-review`. Never self-review.

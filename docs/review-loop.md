@@ -77,7 +77,7 @@ last tick:
    the half that is exact.
 5. The base is `main` and `behind_by` is 0 against it.
 
-The **builder** merges, on `mergeable` and only after the checks below. A failed check is a refusal, never a merge on the label alone. A merge
+The **builder** merges, on `mergeable` and only after the checks above. A failed check is a refusal, never a merge on the label alone. A merge
 GitHub refuses stops there and says so — no retry with different flags, no `--admin`, no
 conflict resolution, never `git push origin HEAD:main`.
 

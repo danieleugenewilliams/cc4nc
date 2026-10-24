@@ -185,7 +185,7 @@ and say nothing if the stopped-comment is already posted.
 ## Taking new work
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
-oldest open issue from `gh issue list --repo {{REPO}} --state open` that no PR already
+oldest open issue from `gh issue list --repo {{REPO}} --state open --limit 100 --search 'sort:created-asc{{CLAIM_FILTER}}'` that no PR already
 references. {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
 `{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, and label it
 `{{LABEL_WAITING}}`. Never self-review.

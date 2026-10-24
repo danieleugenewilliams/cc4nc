@@ -10,12 +10,15 @@ cd "$(dirname "$0")/.."
 fail=0
 
 echo "== python: compileall capstones skills =="
-PYTHONDONTWRITEBYTECODE=1 python3 -m compileall -q capstones skills || fail=1
+# compileall ignores PYTHONDONTWRITEBYTECODE and writes __pycache__ into the tree;
+# point the cache at a throwaway dir so the check leaves the worktree as it found it.
+pyc="$(mktemp -d)"; trap 'rm -rf "$pyc"' EXIT
+PYTHONPYCACHEPREFIX="$pyc" python3 -m compileall -q capstones skills || fail=1
 
-echo "== shell: bash -n =="
+echo "== shell: bash -n (*.sh and sh/bash shebangs) =="
 while IFS= read -r f; do
   bash -n "$f" || { echo "FAIL $f"; fail=1; }
-done < <(find capstones skills scripts -name '*.sh')
+done < <(find capstones skills scripts -type f \( -name '*.sh' -o -exec sh -c 'head -n1 "$1" | grep -Eq "^#!.*[/ ](ba)?sh( |$)"' _ {} \; \) -print)
 
 if [ "$fail" -ne 0 ]; then echo "CHECK FAILED"; exit 1; fi
 echo "CHECK OK"
