@@ -18,9 +18,14 @@ Arguments: `$ARGUMENTS` → `[poll-seconds] [max-active]`, defaulting to `{{POLL
 
 ## Arm the watch
 
-One `Monitor`, described as "builder queue on {{REPO}}". It emits a tagged line for three
-events, because all three need the builder and none needs a second poll loop, plus two state
-lines (`held`, `paused`) that are never dispatched:
+**There is no `persistent` flag; a watch caps at 30 minutes.** Arm it at the maximum
+timeout, re-arm it as *Re-arming* below says when it expires, and **say on each re-arm that
+it re-armed.** A dead watch and a quiet queue look identical; the re-arm line is the only
+thing that tells them apart.
+
+One `Monitor`, at the maximum timeout, described as "builder queue on {{REPO}}". It emits a
+tagged line for three events, because all three need the builder and none needs a second
+poll loop, plus two state lines (`held`, `paused`) that are never dispatched:
 
 ```bash
 POLL={{POLL}}
@@ -230,7 +235,7 @@ and say nothing if the stopped-comment is already posted.
 ## Taking new work
 
 Between events, when the queue is quiet, no `Loop paused` issue is open, and fewer than
-`$ACTIVE` rounds are live, take the oldest eligible open issue that no PR already
+`$ACTIVE` rounds are live, take the oldest eligible open issue that no **open** PR already
 references.{{NEW_WORK_SCOPE}} The list is bounded, sorted
 oldest-first, and filtered in the query rather than in prose:
 
@@ -242,9 +247,16 @@ oldest-first, and filtered in the query rather than in prose:
 drops the oldest issue — the one this step is told to take — as soon as the backlog passes
 30. An issue that tracks other issues — an epic or tracker whose body lists its children —
 is not work: skip it and take the next. Its children are the work.{{BLOCKED_TAKE_RULE}} {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
-`{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, check that it
-took (`gh pr view <n> --repo {{REPO}} --json closingIssuesReferences` is not empty — a
-keyword in prose does not count), and label it `{{LABEL_WAITING}}`. Never self-review.
+`{{TEST_CMD}}`, open the PR naming its issue in the body, and label it `{{LABEL_WAITING}}`.
+Never self-review.
+
+The PR body names the issue with **`Part of #<issue>`** when the PR does part of it, and
+**`Closes #<issue>`** only when it finishes the issue's last item. An issue that lists
+several things is several PRs; a partial PR that says `Closes` closes the whole issue on
+merge, and the remaining work vanishes from the backlog this section reads. On a `Closes`
+PR, check that it took: `gh pr view <n> --repo {{REPO}} --json closingIssuesReferences` is
+not empty — a keyword in prose does not count. A `Part of` PR leaves that list empty by
+design; the `Part of #<issue>` line in its body is the link.
 
 What the subagent's brief adds to that, from the contract's "What a PR is judged against":
 

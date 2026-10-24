@@ -22,6 +22,7 @@ whichever one you loaded this file from:
 SKILL.md                     this procedure
 scripts/preflight.sh         checks the machine and the repo; prints a verdict
 scripts/render.sh            fills the templates; refuses to leave a placeholder
+scripts/check-deny.sh        proves the base-branch deny rules refuse what they claim to
 templates/contract.md        the loop's contract (roles, labels, state table, predicate)
 templates/reviewer-watch.md  the reviewer's slash command
 templates/builder-watch.md   the builder's slash command
@@ -160,9 +161,12 @@ failure this step exists to prevent. Never render a label you have not seen in t
 **Labels live on the PR** in the templates. That is the right choice when one issue can
 spawn several PRs — an issue-level label cannot say which of three stacked PRs to read.
 If the person insists on issue-level labels, the templates need adapting (poll
-`gh issue list --label …`, resolve the PR via `closingIssuesReferences`, require
-`Closes #N` in every PR body and verify it took); say plainly that the bundled commands
-were proven in PR mode and the adaptation has not been.
+`gh issue list --label …`, require every PR body to name its issue and verify it took);
+say plainly that the bundled commands were proven in PR mode and the adaptation has not
+been. Name the issue with `Part of #N` on a PR that does part of it and `Closes #N` only on
+the PR that finishes its last item: a partial PR that says `Closes` closes the whole issue
+on merge, and the rest of the work drops out of the backlog. `closingIssuesReferences`
+sees only the `Closes` form, so resolving a `Part of` PR means searching PR bodies.
 
 ## Step 3 — Write the merge predicate, then attack it
 
@@ -213,10 +217,30 @@ first port to one found both conflicts with the templates' defaults.
 
 It writes the contract to `CONTRACT_PATH`, the commands to `.claude/commands/`, and
 refuses to finish if any `{{PLACEHOLDER}}` survives. The substitution covers the
-`allowed-tools` frontmatter as well as the body — the `gh api repos/<owner>/<name>/…`
-globs there are the one place a missed substitution does not show up in prose, and a wrong
-slug there turns the paginated hand-back count into a permission prompt, which invariant 3
-then turns into a watch that is silent forever.
+`allowed-tools` frontmatter as well as the body, so no `{{REPO}}` is left in it. Know what
+that frontmatter does, though: **nothing.** It is written in the comma-inside form,
+`Bash(gh pr list*, gh pr view*, …)`, and that form matches no command at all — see *What
+this does not give you*. `TOOL_GLOBS` lands in the same line and pre-approves nothing
+either. Leave the form alone; the control is the deny rules below.
+
+Then add **the deny rules** to the repo's `.claude/settings.json`, under
+`permissions.deny`, beside whatever is already there. Show the person the four rules and
+get a yes first — this is the repo's permission config, not a loop file:
+
+```
+Bash(git push * main)
+Bash(git push * main *)
+Bash(git push *:main)
+Bash(git push *:main *)
+```
+
+with `main` replaced by the base branch. Four, because a refspec names `main` either bare or
+right of a colon, and either can carry a trailing flag: two shapes times two positions.
+**Deny outranks allow in every mode and scope**, which is why these work where the
+allowlist cannot. They sit **beside** any `Bash(git push --force-with-lease *)` allow; do
+not remove that. The allow is what lets a session rewind its own branch under a lease,
+taking it out reopens a different problem, and the deny covers the `main` case the allow
+would otherwise reach.
 
 Then add **one line** to the repo's `CLAUDE.md` pointing at the contract (the script
 prints it). The full contract does not go in `CLAUDE.md`: it loads into every session,
@@ -237,28 +261,55 @@ fix the template here, not the copy.
    — and see it exit 0 (an empty array is fine). Same for the builder's two lists and one
    `compare` call if any PR carries the passed label.
 4. **The test command** ran and passed in step 1; say so with the output, not from memory.
-5. **Names:** start the sessions, name them exactly `<prefix>-builder`, `<prefix>-reviewer`
+5. **The deny rules hold:** from the repo root,
+   `bash <skill-dir>/scripts/check-deny.sh .claude/settings.json <BASE_BRANCH>`. It hands
+   each push spelling to a fresh `claude -p --permission-mode default` session, with the
+   deny rules read off the real file by `jq` and a wide `Bash(git push *)` allow loaded on
+   purpose — without it a deny and a no-match look the same. `git` is an echo-only fake
+   first on `PATH`, so nothing reaches a remote. A row the session did not run verbatim is a
+   FAIL, and the script refuses unless it reports on every row. Exit 0 is the only pass;
+   exit 2 means a partial run (`CHECK_DENY_ONLY`), which is not a verification. It costs one
+   session per row; say whether you ran it and show the table.
+6. **Names:** start the sessions, name them exactly `<prefix>-builder`, `<prefix>-reviewer`
    and `<prefix>-coordinator`, and check `ListAgents` shows all three exactly. Each command
    checks its own name when it arms; a one-line test message from the coordinator should
    reach each of the others.
-6. **Resumability** is the acceptance test for the first real round, not something to
+7. **Resumability** is the acceptance test for the first real round, not something to
    simulate now: clear context mid-queue and see whether the next round proceeds from the
    labels and the PR comment alone. Tell the person that is the test.
 
 Report: the verdict, the label set and which labels were created, the merger choice and
-its trade, the test command and its output, the files written, and the holes below.
+its trade, the test command and its output, the deny rules and the `check-deny.sh` table
+(or that it was not run), the files written, and the holes below.
 
 ## What this does not give you
 
 Say these out loud rather than letting them be discovered.
 
-- **`allowed-tools` is pre-approval, not a deny.** A call outside the list prompts a
-  person; under bypassed permissions it stops nothing. It removes the silent path.
-- **`git push origin HEAD:*` admits `HEAD:<base>`**, which lands everything and skips
-  every check. No glob admits arbitrary runtime branch names while excluding the base
-  branch. The rendered contract names the hole and the repairs (drop the glob and let
-  every push prompt; a `PreToolUse` hook; branch protection on the remote). Choosing is
-  the person's.
+- **The `allowed-tools` lines pre-approve nothing.** Both watch commands, and the
+  coordinator when it is rendered, use the comma-inside form, `Bash(a*, b*, c*)`, and that form matches no command at all — proven
+  when builder-watch's own `git add` was refused under its own line. Loops built from these
+  templates have been running because their sessions run in **auto mode and the auto-mode
+  classifier passes the commands**, not because anything was pre-approved. In default mode
+  every call prompts a person.
+- **Do not "fix" that by rewriting the frontmatter into one `Bash()` per rule.** That is the
+  documented form, and it would *create* the `Bash(gh pr merge*)` and `Bash(git merge*)`
+  pre-approvals the prose has only been assuming — a widening of the permission surface
+  dressed as a tidy-up. It has already happened in one downstream repo. The frontmatter is
+  left as it is on purpose.
+- **`git push origin HEAD:*` matches nothing either.** `:*` is the trailing-wildcard
+  spelling, so the entry reads `git push origin HEAD *`. It matches neither `HEAD:<base>`
+  nor the branch pushes it was put there to allow. An earlier version of this skill said it
+  admitted `HEAD:<base>`; it never did.
+- **The deny rules leave three spellings open**, recorded rather than chased:
+  `git -C . push`, and `refs/heads/main` on either side of the refspec. Each has the
+  standing every push had before: a prompt in default mode, the classifier in auto mode.
+  `check-deny.sh` reports them as `ESCAPES` so a change in the matcher shows up.
+- **Branch protection on the remote is the cleaner fix** and the only one enforced off this
+  machine. On a paid plan, or a public repo, reach for it first. It was unavailable on the
+  plan the deny rules were proven on: the API answered 403, "Upgrade to GitHub Pro or make
+  this repository public." A `PreToolUse` hook that refuses pushes to the base branch is a
+  further option. Choosing is the person's.
 - **The loop converges; it does not decide.** Nothing here can mechanise "this feature is
   good enough." Three hand-backs is where a person comes in.
 - **Session naming is the only role enforcement.** Nothing stops someone opening a session
