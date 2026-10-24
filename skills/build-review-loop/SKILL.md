@@ -206,3 +206,15 @@ Say these out loud rather than letting them be discovered.
   good enough." Three hand-backs is where a person comes in.
 - **Session naming is the only role enforcement.** Nothing stops someone opening a session
   named `reviewer` and running `/builder-watch` in it.
+- **Reviewing a PR runs the PR.** The reviewer runs the test command in a worktree checked
+  out from the branch, and a trusted worktree auto-runs any `.claude/` hook, `.mcp.json`, or
+  `CLAUDE.md` the branch carries — under the session's (bypassed) permissions. Where PRs come
+  only from your own builder that is your own code; where they can come from anywhere it is
+  code execution on the review host, and neither `allowed-tools` nor the session name is in
+  front of it. Launch the sessions with `--setting-sources user` so a branch's project config
+  cannot auto-run, and if the builder takes untrusted input, gate the merge verb behind a human
+  tap or one-shot token, not the session name. The rendered contract carries the full note.
+- **Merging is not deploying.** The loop's last state is *merged* — a repo that runs its own
+  merged code (a service, a bot, an agent that reads its own config) needs a separate step to
+  pull and restart what the change touched, and "merged" reported as "live" is a real hole.
+  The loop stops at the merge on purpose; merge→live is the operator's to wire.

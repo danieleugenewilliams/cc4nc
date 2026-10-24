@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh issue list*, gh issue view*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
+allowed-tools: Bash(gh pr list*, gh pr view*, gh pr diff*, gh pr comment*, gh pr edit*, {{MERGE_TOOL}}gh issue list*, gh issue view*, gh issue edit*, gh api repos/{{REPO}}/issues/*/timeline*, gh api repos/{{REPO}}/compare/*, gh label*, git fetch*, git merge*, git rev-parse*, git log*, git show*, git diff*, git status*, git add*, git commit*, git push origin HEAD:*, jq*, comm*, printf*, sort*, grep*, sleep*, date*, {{TOOL_GLOBS}}), Monitor, TaskStop, Agent, PushNotification
 description: Watch the builder queue — place handed-back fixes, re-queue PRs whose base has moved, and act on what is mergeable after the checks. Usage: /builder-watch [poll-seconds] [max-active]
 ---
 
@@ -185,7 +185,7 @@ and say nothing if the stopped-comment is already posted.
 ## Taking new work
 
 Between events, when the queue is quiet and fewer than `$ACTIVE` rounds are live, take the
-oldest open issue from `gh issue list --repo {{REPO}} --state open` that no PR already
+oldest open issue from `gh issue list --repo {{REPO}} --state open --limit 100 --search 'sort:created-asc{{CLAIM_FILTER}}'` that no PR already
 references. {{CLAIMED_RULE}} Branch from `{{BASE_BRANCH}}`, do the work in a subagent, run
 `{{TEST_CMD}}`, open the PR with `Closes #<issue>` in the body, and label it
 `{{LABEL_WAITING}}`. Never self-review.
