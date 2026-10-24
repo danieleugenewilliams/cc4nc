@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+#
+# Opt-in git pre-push hook: run the self-hosted review gate over everything
+# you're about to push, and abort the push if it finds a high-severity defect.
+#
+# This file is NOT installed automatically. To wire it into a repo you own,
+# run this from that repo's root, pointing at wherever you cloned cc4nc:
+#
+#   ln -s /path/to/cc4nc/capstones/domain3/hooks/pre-push .git/hooks/pre-push
+#
+# The hook finds ai-review.sh next to its own real location (it follows the
+# symlink), so the target repo does not need a copy of the reviewer. If you
+# copy the file instead of symlinking it, set REVIEW_GATE to the absolute path
+# of ai-review.sh.
+#
+# To push anyway in an emergency, git's standard escape hatch applies:
+#
+#   git push --no-verify
+#
+# The gate reviews the commit range being pushed against its upstream, so it
+# only looks at *your* new work, not the whole history.
+set -euo pipefail
+
+# Resolve this hook's real location (through any symlink chain) so the gate is
+# found relative to the hook file itself, not relative to the repo being pushed.
+hook="${BASH_SOURCE[0]}"
+while [[ -L "$hook" ]]; do
+  target="$(readlink "$hook")"
+  [[ "$target" == /* ]] || target="$(cd "$(dirname "$hook")" && pwd)/$target"
+  hook="$target"
+done
+HOOK_DIR="$(cd "$(dirname "$hook")" && pwd)"
+
+GATE="${REVIEW_GATE:-$HOOK_DIR/../reviewer/ai-review.sh}"
+if [[ ! -x "$GATE" ]]; then
+  # Last resort: the hook lives in the cc4nc repo itself.
+  GATE="$(git rev-parse --show-toplevel)/capstones/domain3/reviewer/ai-review.sh"
+fi
+if [[ ! -x "$GATE" ]]; then
+  # A gate that silently passes is worse than no gate: fail closed.
+  echo "pre-push: review gate not found (looked next to this hook and at \$REVIEW_GATE)." >&2
+  echo "          Set REVIEW_GATE=/path/to/ai-review.sh, or push with --no-verify." >&2
+  exit 2
+fi
+
+# What's about to be pushed: commits on HEAD not on the upstream tracking branch.
+if upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then
+  range="${upstream}..HEAD"
+elif git rev-parse --verify -q 'HEAD~1' >/dev/null; then
+  # No upstream yet (first push of a branch): review the last commit only.
+  range="HEAD~1..HEAD"
+else
+  # HEAD is the root commit (first push of a brand-new repo): HEAD~1 does not
+  # exist and `git diff HEAD~1..HEAD` exits 128, which would kill the push with
+  # a git error instead of a review. Diff against the empty tree instead.
+  range="$(git hash-object -t tree /dev/null)..HEAD"
+fi
+
+echo "pre-push: reviewing $range with the self-hosted gate…" >&2
+exec "$GATE" --range "$range"
