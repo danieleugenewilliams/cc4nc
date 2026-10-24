@@ -48,3 +48,68 @@ the loop could not have run on any of them.
 
 **Thirteen abandoned worktrees** accumulated in the curriculum repo before anyone read
 `git worktree list`.
+
+# What three weeks of running it taught (Oct 2026)
+
+From the three sessions of one loop — builder, reviewer, coordinator — on a browser game repo
+(one big HTML file, a progress tracker, players who are not the owner), PRs #95–#131, plus the
+memories of four other repos running the loop. The coordinator role was drafted from the
+desktop app on Oct 23; this is what the sessions that would run it said about the draft,
+each point tied to an incident.
+
+**Exact names were right, and deriving them was wrong.** The draft built the prefix from the
+repo name (`agent-ux`); the sessions were `agentux-*`. The coordinator had messaged the other
+two under three names that week — `coordinator`, `agentux-coordinator`, and a typo — and the
+draft's "ignore any other name" would have dropped the handoff of the assets the next
+feature was built from. Hence a required `SESSION_PREFIX`, each session checking its own
+name, and near-misses reported rather than dropped.
+
+**Decisions were the near-loss.** Five decisions reached the builder only by message. Where
+the coordinator had posted first, re-reading was cheap and worked. Decisions also landed in
+three places (issue notes, PR bodies, relayed comments); one relayed option letter was read
+as its opposite, and the reviewer could not tell a relayed decision from the person's own
+comment because every session posts as the person's login. Hence one place, quoted options,
+and an attribution line on everything posted on someone's behalf.
+
+**The person is several people.** The players asked; the owner decided. A note that says
+"from the person" loses the approval.
+
+**Merges waited on the person, and nothing said so.** Auto mode refuses `gh pr merge` until
+the person types "merge #N" in the builder session; ready PRs waited three to six hours.
+A coordinator relaying "merge #N" would be laundering a permission decision, so the fix is
+visibility — "waiting on you" first in every status — not a relay.
+
+**The watches expire every half hour**, and the draft's `persistent: true` does not exist in
+this harness. The reviewer re-armed about seventy times in two days. The builder's re-arm
+re-announced every waiting merge each time; the coordinator's "first tick publishes nothing"
+would have lost every merge that landed between expiry and re-arm. Hence `$SEEN` files, and
+an explicit re-arm section in every command.
+
+**A two-hour "stuck" alarm fired on a healthy review.** #131's review took 2 h 6 m; big
+reviews run one to two hours. Three hours, and ask whether the reviewer is busy first.
+
+**A crew of three reviewers would have cost three times as much and caught nothing more.**
+Single rounds already ran 116k–209k tokens and up to two hours, mostly driving a browser.
+Every real defect came from correctness plus device measurement — a comment that swallowed a
+`push()`, a restore that replayed cheers, 9-pixel weapon slots, a 32-pixel button. Hence one
+reviewer with the lenses as a checklist, and a second only where the lenses say so.
+
+**Follow-ups died in comments.** Leftover overlaps on one screen size, an overflow already on
+main: both "LGTM plus a note", neither filed. Hence a third finding kind and a filer.
+
+**Checks lived in scratchpads.** The builder's harnesses were re-copied each slice and never
+committed; a later slice broke an earlier slice's check and nobody noticed. Hence `CHECKS_DIR`.
+
+**The blocked label was already doing three jobs.** The builder used `needs-human` for "wait
+for the players' choices" and for "wait for the owner's pick" — a hold and a proposal.
+Adding `on-hold` and `proposed` beside it would have given four labels for "waiting on the
+person". One label, and the comment says which kind of wait.
+
+**The coordinator made things, too.** It built 3D models the next feature used, in a
+scratchpad that would have been cleared, and one differed from its issue's spec — which only
+the builder noticed. Hence: durable place, checked against the spec, before an issue points
+to it.
+
+**Nobody owned the test environment.** A missing headless browser slowed every review for a
+week and failed a 5-minute test cap. It is not a finding on any PR; it is a status line until
+someone fixes it.
