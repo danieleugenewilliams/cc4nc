@@ -68,9 +68,10 @@ while true; do
     work=$(printf '%s\n%s\n' "$handback" "$routed" | grep . | sort -k2,2n)
     eligible=$(printf '%s\n' "$work" | grep . | head -n "$ACTIVE")
     held=$(( $(printf '%s\n' "$work" | grep -c .) - $(printf '%s\n' "$eligible" | grep -c .) ))
-    comm -13 <(printf '%s\n' "$prev") <(printf '%s\n' "$eligible" | grep . | sort) | grep .
-    prev=$(printf '%s\n' "$eligible" | grep . | sort)
-    state=$(printf '%s\nheld %s\n' "$notes" "$held" | grep . | sort)
+    cur=$(printf '%s\n%s\n' "$eligible" "$notes" | grep . | sort)
+    comm -13 <(printf '%s\n' "$prev") <(printf '%s\n' "$cur") | grep .
+    prev="$cur"
+    state="held $held"
   fi
   comm -13 "$SEEN" <(printf '%s\n' "$state") | grep .
   printf '%s\n' "$state" > "$SEEN"
@@ -122,14 +123,18 @@ ones this file sharpens:
   the tick publishes `paused <issue>` once and nothing else, so no handback, stale or
   mergeable goes out. `prev` keeps what was published before the pause, so work that arrived
   during it emits on resume and work already handled does not.
-- **Work lines and state lines are remembered differently, on purpose.** Work lines
-  (`handback`, `stale`) are diffed against `prev`, which starts empty on every arm, so a
-  re-arm replays every PR still carrying a trigger label. That replay is how a round that
-  died gets dispatched again; the claim (below) drops the ones still running. State lines
-  (`mergeable`, `held`, `paused`) are diffed against `$SEEN`, a file that outlives the
-  watch, so a re-arm says nothing about state that has not changed. Without it, every
-  re-arm re-announced every waiting merge, and with watches expiring every half hour that
-  was dozens of identical notices per PR.
+- **Work lines and count lines are remembered differently, on purpose.** Work lines
+  (`handback`, `stale`, `mergeable`) are diffed against `prev`, which starts empty on every
+  arm, so a re-arm replays every PR still carrying a trigger label. That replay is how a
+  round that died gets dispatched again, and how a merge a dead session never made gets
+  made; the claim (below) drops the ones still running. The count lines (`held`, `paused`)
+  are diffed against `$SEEN`, a file that outlives the watch, so a re-arm does not repeat a
+  count that has not changed.
+- **`mergeable` replays, so its notice is rationed in the handler, not the script.**
+  Remembering it across re-arms in `$SEEN` would hide a passed PR from every later session
+  for good. Instead the handler says "waiting on your merge" once per PR and sha per
+  session; with watches expiring every half hour, re-announcing on every re-arm was dozens
+  of identical notices per PR.
 
 ## On each event
 

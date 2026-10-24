@@ -226,7 +226,11 @@ done
 - **`ready`** is a PR whose only flow label is `{{LABEL_PASSED}}`. Where the builder's merge
   needs the person's word, these are the PRs waiting on them — they waited three to six hours
   in the loop that found this. Tell the person, with where to type "merge #N".
-- **`decide`** is a question for the person (above), on an issue or a PR.
+- **`decide`** is something carrying `{{LABEL_BLOCKED}}`. Read it before saying anything:
+  this session's own holds, proposals and filed follow-ups carry the label too, and their
+  attribution line ("via {{COORDINATOR_NAME}}", "Proposed by {{COORDINATOR_NAME}}") says so.
+  The person already knows about those — report nothing. Only a question the builder or
+  reviewer raised goes to the person, as above.
 - **`reviewed`** is a review that landed; read its comment for follow-ups to file.
 - **`stuck`** is a PR waiting for review with no update for {{STUCK_HOURS}} hours. Before
   saying anything, check `ListAgents`: if `{{REVIEWER_NAME}}` is busy, a big review is
@@ -237,8 +241,9 @@ done
 - **`paused`** confirms a loop-wide pause took effect, or tells the person someone else
   paused it.
 
-On each event, tell the person in one line with the number. `capped`, `decide` and
-`watchdog` also go out as a `PushNotification`; the rest wait for the person to look.
+On each event, tell the person in one line with the number. `capped`, `watchdog`, and a
+`decide` that is the loop's question (not this session's own hold, proposal or follow-up)
+also go out as a `PushNotification`; the rest wait for the person to look.
 
 ## Re-arming
 

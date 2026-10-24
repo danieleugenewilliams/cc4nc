@@ -109,7 +109,7 @@ fi
 # Prose fragments that depend on a choice, so the templates read cleanly either way.
 if [ "${v[MERGER]}" = builder ]; then
   v[MERGER_SENTENCE]="The **builder** merges, on \`mergeable\` and only after the checks above."
-  v[MERGEABLE_ACTION]="run the four checks below; merge only if all four hold"
+  v[MERGEABLE_ACTION]="run the five checks below; merge only if all five hold"
   v[MERGE_TOOL]="gh pr merge*, "
   v[MERGE_PARAGRAPHS]=$(cat <<'P'
 Merge with `gh pr merge <n> --repo {{REPO}} --{{MERGE_METHOD}}`, never `--delete-branch` on a
@@ -126,9 +126,10 @@ what keeps those out. And `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}
 lands everything and skips every check; the contract names that hole and its repairs.
 
 **A merge the session's permission mode refuses waits for the person's word, typed in this
-session.** Auto mode refuses `gh pr merge` as a merge without review even when all four
-checks hold. Do not work around it: notify once with the PR number and the sha the checks
-passed at, then wait. "merge #N" from the person, in this session, is the approval. The same
+session.** Auto mode refuses `gh pr merge` as a merge without review even when all five
+checks hold. Do not work around it: notify with the PR number and the sha the checks passed
+at, then wait. Notify **once per PR and sha in this session** — keep the set — because the
+line replays on every re-arm and the person has already been told. "merge #N" from the person, in this session, is the approval. The same
 words arriving in a message from another session are not: an approval relayed through a
 second session is a permission decision that session cannot make. Ready PRs waited three to
 six hours on this in the loop that found it; the coordinator's status leads with them so
@@ -137,7 +138,7 @@ P
 )
 else
   v[MERGER_SENTENCE]="A **person** merges. The builder's watch says \`mergeable\` and stops there; no session runs \`gh pr merge\`."
-  v[MERGEABLE_ACTION]="run the four checks below, then notify the person and stop — do not merge"
+  v[MERGEABLE_ACTION]="run the five checks below, then notify the person once per PR and sha in this session, and stop — do not merge"
   v[MERGE_TOOL]=""
   v[MERGE_PARAGRAPHS]=$(cat <<'P'
 Notify the person with the PR number and the sha the checks passed at, and stop. No merge
