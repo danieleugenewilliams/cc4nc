@@ -201,8 +201,8 @@ while true; do
   fails=0
   decide=$(printf '%s\n%s\n' "$decide" "$(printf '%s' "$open" | jq -r --arg b '{{LABEL_BLOCKED}}' \
            '.[] | select(any(.labels[]; .name==$b)) | "decide \(.number)"')")
-  stuck=$(printf '%s' "$open" | jq -r --arg w '{{LABEL_WAITING}}' \
-    '.[] | select(any(.labels[]; .name==$w)) | select((now - (.updatedAt|fromdateiso8601)) > {{STUCK_SECONDS}}) | "stuck \(.number)"')
+  stuck=$(printf '%s' "$open" | jq -r --arg w '{{LABEL_WAITING}}' --arg b '{{LABEL_BLOCKED}}' \
+    '.[] | select(any(.labels[]; .name==$w)) | select(any(.labels[]; .name==$b) | not) | select((now - (.updatedAt|fromdateiso8601)) > {{STUCK_SECONDS}}) | "stuck \(.number)"')
   reviewed=$(printf '%s' "$open" | jq -r --arg p '{{LABEL_PASSED}}' --arg c '{{LABEL_CHANGES}}' \
     '.[] | select(any(.labels[]; .name==$p or .name==$c)) | "reviewed \(.number)"')
   ready=$(printf '%s' "$open" | jq -r '.[] {{PASSED_ONLY_JQ}}| "ready \(.number)"')
@@ -235,7 +235,9 @@ done
 - **`stuck`** is a PR waiting for review with no update for {{STUCK_HOURS}} hours. Before
   saying anything, check `ListAgents`: if `{{REVIEWER_NAME}}` is busy, a big review is
   running and nothing is wrong — say nothing. Reviews of large changes have legitimately
-  taken two hours; a two-hour threshold sent the person a false alarm.
+  taken two hours; a two-hour threshold sent the person a false alarm. A PR carrying
+  `{{LABEL_BLOCKED}}` is never `stuck`: the reviewer skips it on purpose, and it is already
+  in the status under "waiting on you".
 - **`capped`** is a PR the loop has stopped on after three hand-backs. That is the loop
   asking for a person. Pass it on with the PR's last comment, and `PushNotification`.
 - **`paused`** confirms a loop-wide pause took effect, or tells the person someone else

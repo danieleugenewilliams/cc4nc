@@ -56,8 +56,7 @@ stands, latest note included, not as it stood when the PR opened.
 - **Name who asked and who decided.** The person who asks for a change and the person who
   approves it are often different people (the people who use the project ask; its owner decides), and the
   difference is the approval.
-- **Whoever hears the decision writes the note**: the coordinator for what reaches it, the
-  builder for a decision given in the builder session. Then a one-line pointer to the
+- **Whoever hears the decision writes the note**: {{NOTE_WRITER}}. Then a one-line pointer to the
   sessions that need it.
 - **A question that needs the person** {{QUESTION_RULE}}
 
