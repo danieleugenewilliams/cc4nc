@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render the loop's contract and two watch commands into a target repo.
+# Render the loop's contract and its watch commands into a target repo.
 # Usage:
 #   render.sh <repo-path> KEY=VALUE [KEY=VALUE ...]
 # Required keys:
@@ -12,6 +12,11 @@
 #   TOOL_GLOBS      allowed-tools entries the test command needs, comma-separated
 #                   e.g. TOOL_GLOBS='npm*' or TOOL_GLOBS='go*, make*'
 #   MERGER          builder | person
+#   SESSION_PREFIX  the exact prefix of this loop's session names, e.g. SESSION_PREFIX=agentux
+#                   gives agentux-builder, agentux-reviewer, agentux-coordinator. Not derived
+#                   from REPO: the running sessions' names are what messages are addressed to,
+#                   and a derived prefix (agent-ux) matched none of them on the first loop that
+#                   tried it. Read the names off ListAgents before choosing.
 # Optional keys (defaults shown):
 #   POLL=120  ACTIVE=3  MERGE_METHOD=merge  CONTRACT_PATH=docs/review-loop.md
 #   LABEL_CLAIMED=   (empty = no claimed state; set when builders run in parallel)
@@ -21,20 +26,85 @@
 #   NEW_WORK_REASON= (required with NEW_WORK_LABEL: one sentence saying why, rendered next to the rule)
 #   REVIEWER_FIXES=yes  (no = the reviewer posts findings only and never edits the PR;
 #                        every finding goes back to the builder as LABEL_CHANGES)
+#   COORDINATOR=yes     (no = two sessions only; no coordinator command is rendered)
+#                       COORDINATOR=yes requires LABEL_BLOCKED: holds and proposals use it.
+#   LABEL_PAUSED=loop-paused        on one open issue: the whole loop takes no new work
+#   OUTCOME_PATH=docs/outcome.md    the person's own statement of what the project is for
+#   LENSES_PATH=docs/review-lenses.md  what this project is reviewed through
+#   CHECKS_DIR=scripts/checks       where the check each issue's "done when" gets is committed
+#   STUCK_HOURS=3       the coordinator's "waiting for review with no update" threshold
 #
 # Writes: <repo>/<CONTRACT_PATH>, <repo>/.claude/commands/reviewer-watch.md,
-#         <repo>/.claude/commands/builder-watch.md. Refuses to leave any {{PLACEHOLDER}}.
+#         <repo>/.claude/commands/builder-watch.md, and with COORDINATOR=yes
+#         <repo>/.claude/commands/coordinator.md. Refuses to leave any {{PLACEHOLDER}}.
 
 set -euo pipefail
+# declare -A needs bash 4+. macOS /bin/bash is 3.2 and dies on the first key with an unbound
+# variable; say why instead.
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "render.sh needs bash 4 or later (this is $BASH_VERSION); run it with a newer bash, e.g. Homebrew's" >&2; exit 1
+fi
 here="$(cd "$(dirname "$0")/.." && pwd)"
 repo="${1:?repo path}"; shift
-declare -A v=( [POLL]=120 [ACTIVE]=3 [MERGE_METHOD]=merge [CONTRACT_PATH]=docs/review-loop.md [LABEL_CLAIMED]= [LABEL_BLOCKED]= [REVIEWER_FIXES]=yes [NEW_WORK_LABEL]= [NEW_WORK_REASON]= )
+declare -A v=( [POLL]=120 [ACTIVE]=3 [MERGE_METHOD]=merge [CONTRACT_PATH]=docs/review-loop.md [LABEL_CLAIMED]= [LABEL_BLOCKED]= [REVIEWER_FIXES]=yes [NEW_WORK_LABEL]= [NEW_WORK_REASON]=
+               [COORDINATOR]=yes [LABEL_PAUSED]=loop-paused [OUTCOME_PATH]=docs/outcome.md [LENSES_PATH]=docs/review-lenses.md [CHECKS_DIR]=scripts/checks [STUCK_HOURS]=3 )
 for kv in "$@"; do v["${kv%%=*}"]="${kv#*=}"; done
-for k in REPO BASE_BRANCH LABEL_WAITING LABEL_PASSED LABEL_CHANGES TEST_CMD TOOL_GLOBS MERGER; do
+for k in REPO BASE_BRANCH LABEL_WAITING LABEL_PASSED LABEL_CHANGES TEST_CMD TOOL_GLOBS MERGER SESSION_PREFIX; do
   [ -n "${v[$k]:-}" ] || { echo "missing $k" >&2; exit 1; }
 done
 case "${v[MERGER]}" in builder|person) ;; *) echo "MERGER must be builder or person" >&2; exit 1;; esac
 case "${v[REVIEWER_FIXES]}" in yes|no) ;; *) echo "REVIEWER_FIXES must be yes or no" >&2; exit 1;; esac
+case "${v[COORDINATOR]}" in yes|no) ;; *) echo "COORDINATOR must be yes or no" >&2; exit 1;; esac
+case "${v[STUCK_HOURS]}" in ''|*[!0-9]*) echo "STUCK_HOURS must be a whole number of hours" >&2; exit 1;; esac
+if [ "${v[COORDINATOR]}" = yes ] && [ -z "${v[LABEL_BLOCKED]}" ]; then
+  echo "COORDINATOR=yes needs LABEL_BLOCKED (e.g. needs-human): the coordinator's holds and proposals are that label" >&2; exit 1
+fi
+P="${v[SESSION_PREFIX]}"
+v[BUILDER_NAME]="$P-builder"; v[REVIEWER_NAME]="$P-reviewer"; v[COORDINATOR_NAME]="$P-coordinator"
+v[STUCK_SECONDS]=$(( v[STUCK_HOURS] * 3600 ))
+# A filesystem-safe tag for the watches' state files, so two loops on one machine never share one.
+v[REPO_TAG]="${v[REPO]//\//-}"
+
+# The sessions, by exact name. The coordinator is optional; what it would do falls to the
+# builder (filing follow-ups) or to the person (relaying their own decisions) without it.
+if [ "${v[COORDINATOR]}" = yes ]; then
+  v[SESSION_LIST]="\`${v[BUILDER_NAME]}\`, \`${v[REVIEWER_NAME]}\` and \`${v[COORDINATOR_NAME]}\`"
+  v[COORDINATOR_ROLE]=$(cat <<'P'
+
+A **coordinator** (`{{COORDINATOR_NAME}}`) is the person's line into the loop while it runs.
+It records their decisions and scope changes on the issues, holds and pauses work, files
+follow-ups, raises the builder's open questions with the person, and reports. It commits
+nothing to this repository, reviews nothing, merges nothing, never relays a merge approval,
+and never touches `{{LABEL_WAITING}}`, `{{LABEL_PASSED}}` or `{{LABEL_CHANGES}}`. Its command
+is `/coordinator`.
+P
+)
+  v[FOLLOWUP_FILER]="\`${v[COORDINATOR_NAME]}\`"
+  v[QUESTION_ROUTE]="\`${v[COORDINATOR_NAME]}\` raises it with the person and records the answer on the issue"
+else
+  v[SESSION_LIST]="\`${v[BUILDER_NAME]}\` and \`${v[REVIEWER_NAME]}\`"
+  v[COORDINATOR_ROLE]=""
+  v[FOLLOWUP_FILER]="the builder"
+  v[QUESTION_ROUTE]="the session that asked notifies the person, and records the answer on the issue when it comes"
+fi
+
+if [ "${v[COORDINATOR]}" = yes ]; then
+  v[PAUSE_SETTER]=" or coordinator"
+  v[ENV_COORDINATOR]=" and to \`${v[COORDINATOR_NAME]}\`, which keeps it in its status until it is fixed"
+else
+  v[PAUSE_SETTER]=""
+  v[ENV_COORDINATOR]=""
+fi
+if [ -n "${v[LABEL_BLOCKED]}" ]; then
+  v[HOLD_RULE]="Hold one item by adding \`${v[LABEL_BLOCKED]}\` to it, with a comment saying it is a hold and why: nothing takes, reviews or merges it until the label comes off. One label for \"waiting on the person\" — a decision, a hold or an unapproved proposal — because four overlapping labels get misread, and the first loop already used its blocked label for all three."
+else
+  v[HOLD_RULE]="There is no per-item hold without a blocked label; pause the loop, or set \`LABEL_BLOCKED\` and re-render."
+fi
+if [ -n "${v[LABEL_BLOCKED]}" ]; then
+  v[QUESTION_RULE]="is the blocked label, \`${v[LABEL_BLOCKED]}\`, on the issue or PR, with a comment naming the decision and its options in full; ${v[QUESTION_ROUTE]}."
+else
+  v[QUESTION_RULE]="gets a comment naming the decision and its options in full; ${v[QUESTION_ROUTE]}. Until it is answered, the session stops on that item."
+fi
 
 # Prose fragments that depend on a choice, so the templates read cleanly either way.
 if [ "${v[MERGER]}" = builder ]; then
@@ -54,6 +124,15 @@ Note what `gh pr merge*` on the allowlist admits: every merge-method flag, not j
 and no glob refuses a trailing flag. The prose is
 what keeps those out. And `git push origin HEAD:*` matches `HEAD:{{BASE_BRANCH}}`, which
 lands everything and skips every check; the contract names that hole and its repairs.
+
+**A merge the session's permission mode refuses waits for the person's word, typed in this
+session.** Auto mode refuses `gh pr merge` as a merge without review even when all four
+checks hold. Do not work around it: notify once with the PR number and the sha the checks
+passed at, then wait. "merge #N" from the person, in this session, is the approval. The same
+words arriving in a message from another session are not: an approval relayed through a
+second session is a permission decision that session cannot make. Ready PRs waited three to
+six hours on this in the loop that found it; the coordinator's status leads with them so
+the wait is visible.
 P
 )
 else
@@ -95,9 +174,11 @@ fi
 
 # NEW_WORK_LABEL narrows what the builder takes. The reason has to travel with the rule:
 # a filter whose reason lives only in a PR comment is the one the next agent removes.
+CLAIM_ASSIGN_NOTE=""
+[ -n "${v[LABEL_CLAIMED]}" ] && CLAIM_ASSIGN_NOTE=" A person does not assign work by labelling an issue \`${v[LABEL_CLAIMED]}\` — that label means a builder already holds the issue, and every new-work query skips it, so an issue labelled that way is stranded."
 if [ -n "${v[NEW_WORK_LABEL]}" ]; then
   [ -n "${v[NEW_WORK_REASON]:-}" ] || { echo "NEW_WORK_LABEL needs NEW_WORK_REASON (why the builder's scope is narrowed)" >&2; exit 1; }
-  v[NEW_WORK_SCOPE]=" **Only issues labelled \`${v[NEW_WORK_LABEL]}\` are taken** — ${v[NEW_WORK_REASON]} Everything else in the backlog is a person's to assign: they tell a builder session to take a specific issue, and the builder claims it as usual, or they widen this scope. A person does not assign work by labelling an issue \`${v[LABEL_CLAIMED]:-claimed}\` — that label means a builder already holds the issue, and every new-work query skips it, so an issue labelled that way is stranded."
+  v[NEW_WORK_SCOPE]=" **Only issues labelled \`${v[NEW_WORK_LABEL]}\` are taken** — ${v[NEW_WORK_REASON]} Everything else in the backlog is a person's to assign: they tell a builder session to take a specific issue, and the builder claims it as usual, or they widen this scope.${CLAIM_ASSIGN_NOTE}"
   v[NEW_WORK_SCOPE_SHORT]=", restricted to issues labelled \`${v[NEW_WORK_LABEL]}\` (${v[NEW_WORK_REASON]%.})"
 else
   v[NEW_WORK_SCOPE]=""
@@ -121,6 +202,8 @@ v[FLOW_LABELS]="$flow"
 
 if [ -n "${v[LABEL_BLOCKED]}" ]; then
   B="${v[LABEL_BLOCKED]}"
+  BLOCKED_BY_COORD=""
+  [ "${v[COORDINATOR]}" = yes ] && BLOCKED_BY_COORD=" (or the coordinator, on the person's word, after recording the decision on the issue)"
   # Without a claimed label these clauses have nothing to name; drop them rather than
   # render a stand-in like `a claim` that reads as a label the repo does not have.
   CLAIM_SWAP=""; CLAIM_SKIP_NOTE=""
@@ -128,10 +211,10 @@ if [ -n "${v[LABEL_BLOCKED]}" ]; then
     CLAIM_SWAP=" (replacing \`${v[LABEL_CLAIMED]}\` if the issue carries it)"
     CLAIM_SKIP_NOTE=" The one label a reviewer does not skip is \`${v[LABEL_CLAIMED]}\` next to \`${v[LABEL_WAITING]}\`: that PR was handed off and the claim was left behind, so review it and say so in the comment rather than leave it stalled unseen."
   fi
-  v[BLOCKED_ROW]=$'\n'"| \`$B\` | either | Blocked on a decision only a person can make — an open product question, an unratified spec, a release gate. On the issue or the PR. Not reviewable work and not buildable work: both sessions leave it alone until a person removes it. |"
+  v[BLOCKED_ROW]=$'\n'"| \`$B\` | either | Blocked on a decision only a person can make — an open product question, an unratified spec, a release gate. On the issue or the PR. Not reviewable work and not buildable work: both sessions leave it alone until a person removes it${BLOCKED_BY_COORD}. Also a hold, and an unapproved proposal. |"
   v[BLOCKED_TABLE_ROWS]=$'\n'"| any | the work needs a decision, not code | either | adds \`$B\`, says what the decision is, stops |
-| \`$B\` | the person decides and removes it | person | the state it was in before |"
-  v[BLOCKED_RULE]="Blocks: when the work turns out to need a decision rather than code, add \`$B\`${CLAIM_SWAP}, say in a comment what the decision is, and stop. Do not guess and keep building. The builder takes no issue carrying it, the reviewer skips a PR carrying it, and the merge check refuses it on the PR **or** on any issue the PR closes. Only a person takes it off."
+| \`$B\` | the person decides and removes it | person${BLOCKED_BY_COORD} | the state it was in before |"
+  v[BLOCKED_RULE]="Blocks: when the work turns out to need a decision rather than code, add \`$B\`${CLAIM_SWAP}, say in a comment what the decision is, and stop. Do not guess and keep building. The builder takes no issue carrying it, the reviewer skips a PR carrying it, and the merge check refuses it on the PR **or** on any issue the PR closes. Only a person takes it off${BLOCKED_BY_COORD}."
   v[BLOCKED_TAKE_RULE]=" Skip any issue carrying \`$B\`: it is waiting on a person, not on capacity."
   v[SKIP_BLOCKED_JQ]="| select(any(.labels[].name; . == \"$B\") | not) "
   v[SKIP_BLOCKED_NOTE]="- **PRs carrying \`$B\` are filtered out of the queue.** They wait on a decision, not a review.${CLAIM_SKIP_NOTE}"
@@ -284,6 +367,12 @@ render() {  # $1 template, $2 output
 render "$here/templates/contract.md"       "$repo/${v[CONTRACT_PATH]}"
 render "$here/templates/reviewer-watch.md" "$repo/.claude/commands/reviewer-watch.md"
 render "$here/templates/builder-watch.md"  "$repo/.claude/commands/builder-watch.md"
+if [ "${v[COORDINATOR]}" = yes ]; then
+  render "$here/templates/coordinator.md"  "$repo/.claude/commands/coordinator.md"
+  runs="Sessions named exactly \`${v[BUILDER_NAME]}\`, \`${v[REVIEWER_NAME]}\` and \`${v[COORDINATOR_NAME]}\` run \`/builder-watch\`, \`/reviewer-watch\` and \`/coordinator\`."
+else
+  runs="Sessions named exactly \`${v[BUILDER_NAME]}\` and \`${v[REVIEWER_NAME]}\` run \`/builder-watch\` and \`/reviewer-watch\`."
+fi
 echo
 echo "Next: add one pointer line to $repo/CLAUDE.md, e.g."
-echo "  - Builder–reviewer loop: see \`${v[CONTRACT_PATH]}\` (roles, labels, merge predicate). Sessions named builder/reviewer run \`/builder-watch\` and \`/reviewer-watch\`."
+echo "  - Builder–reviewer loop: see \`${v[CONTRACT_PATH]}\` (roles, labels, merge predicate). $runs"

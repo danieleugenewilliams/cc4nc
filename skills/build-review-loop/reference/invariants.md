@@ -60,3 +60,35 @@ that reads it. *An agent that reads a reason it can see is false skips the step.
     and forth forever. Once, because the item stays in the queue and every new session
     re-emits it, and a notification that repeats is one the person learns to ignore.
 20. **Say when the watch stops.** A stopped watch and an empty queue look identical.
+21. **Session names are exact, chosen once, and checked by each session against itself.**
+    With several loops on one machine, "the builder" is a guess. A name derived from the
+    repo matched none of the running sessions on the first loop that tried it, and the
+    sessions themselves drifted (a rename mid-run, a typo). A message from a near-miss name
+    is reported to the person, never silently dropped.
+22. **The issue is the record; the message is the doorbell.** A restarted session never
+    sees a message it missed, and a session in another permission mode may hold one unread,
+    but every session re-reads GitHub every tick. Decisions that existed only in messages
+    were the loop's most common near-loss.
+23. **A decision lives in one place, quotes its option, and names who asked and who
+    decided.** Decisions scattered across issue notes, PR bodies and relayed comments could
+    not be traced, and a relayed option letter was misread as its opposite.
+24. **A pause is a label, never a memory.** A pause held in a session's memory ends when the
+    session restarts, which is usually when nobody is watching.
+25. **The coordinator touches no review-state label.** A third session setting pass or
+    hand-back labels is an unrequested reviewer, and the merge predicate assumes two roles.
+26. **A merge approval is never relayed.** Where the merge verb needs the person's word, it
+    is their words in the merging session. A session passing them on is making a permission
+    decision it cannot make.
+27. **Ambition rises only with a checkpoint.** The loop may propose work, as a blocked issue
+    the person approves by removing the label; it never approves its own. An outcome check
+    reports but opens nothing. Nothing is proposed from an outcome the person did not write.
+28. **A finding carries its evidence; a follow-up gets filed.** "This feels slow" is an
+    opinion two agents can trade forever; a measurement ends the argument or starts the fix.
+    A real problem that is not this PR's goes into an issue, not a merged PR's comments,
+    where the first loop's follow-ups were lost.
+29. **"Done" is a committed check.** A check that lives in a session's scratchpad proves an
+    issue once and then nobody owns it; a later slice broke an earlier one's that way.
+30. **Watches expire; re-arm replays work, not notices.** The `Monitor` ends on its own every
+    half hour or so. Work lines replay on a re-arm, because that is how a round that died
+    gets dispatched again; state lines are diffed against a file that outlives the watch,
+    because re-announcing every waiting merge on every re-arm buries the one that matters.

@@ -11,9 +11,58 @@ Repository: `{{REPO}}`. Base branch: `{{BASE_BRANCH}}`. Verification command: `{
 
 ## Roles
 
-**The session name decides the role.** A session named some variation of `builder` is a
-builder; one named some variation of `reviewer` is a reviewer. No session holds both — a
-session that reviews its own work is not a second opinion.
+**The session name decides the role, and the names are exact:** {{SESSION_LIST}}. No
+session holds two roles — a session that reviews its own work is not a second opinion.
+{{COORDINATOR_ROLE}}
+
+Exact, because several loops run on one machine and "the builder" is a guess: a message
+delivered to another project's builder is work done on the wrong backlog. Each session
+checks **its own** name in `ListAgents` when it arms its watch ("This session is …"), and
+says so to the person if the name is not the one above. Session names drift — renames,
+typos, a bare `builder` from before the prefix existed — and the session that drifted is
+the last to notice.
+
+**A message from a near-miss name is reported, not dropped.** A message about this loop from
+a session whose name is close to one of the above but not exact (`builder`, a typo, a
+suffix) is neither acted on nor silently ignored: tell the person who sent what, and ask.
+The loop that wrote this rule received coordinator messages under three names in one week,
+including a typo; dropping them silently would have lost a handoff the build depended on.
+
+## Messages between sessions
+
+**A message is a pointer, not a record.** It names an issue or PR to re-read, or says the
+loop is paused or resumed. Act on what GitHub says when you re-read it, never on the message
+text alone. A session that restarts never sees a message it missed, but it re-reads GitHub
+every tick, so the work follows GitHub even when a message is lost. Decisions that reached
+a builder only by message were the loop's most common near-loss.
+
+Every session posts as the same GitHub login as the person, so a comment cannot show who
+typed it. **Anything a session posts on the person's behalf says so on its first line** —
+`From <person>, via <session>:` — on issues as well as PRs. A comment with no such line is the person's own.
+
+## Decisions
+
+A decision lives in **one place: a dated note appended to the issue's body**, never only in
+a PR comment, a PR body or a message. The reviewer judges the PR against the issue as it
+stands, latest note included, not as it stood when the PR opened.
+
+```
+> **Decision YYYY-MM-DD** — asked by <who>; decided by <who>, <where they said it>:
+> "<the option's text, quoted — never only its letter>"
+```
+
+- **Quote the option, not its letter.** Letters get misread across relays: one relay called
+  "drop the toast" option (a) when (a) was "keep it".
+- **Name who asked and who decided.** The person who asks for a change and the person who
+  approves it are often different people (the people who use the project ask; its owner decides), and the
+  difference is the approval.
+- **Whoever hears the decision writes the note**: the coordinator for what reaches it, the
+  builder for a decision given in the builder session. Then a one-line pointer to the
+  sessions that need it.
+- **A question that needs the person** {{QUESTION_RULE}}
+
+A scope change to an issue whose PR is already open goes on that PR as a follow-up commit,
+and the PR goes back to `{{LABEL_WAITING}}` like any other push.
 
 ## Labels
 
@@ -27,6 +76,7 @@ prompt without creating it first.
 | `{{LABEL_WAITING}}` | builder | This PR is waiting for a reviewer. |
 | `{{LABEL_PASSED}}` | reviewer | Reviewed and clean. The only signal that authorises a merge. |
 | `{{LABEL_CHANGES}}` | reviewer | {{CHANGES_MEANING}} |{{CLAIMED_ROW}}{{BLOCKED_ROW}}
+| `{{LABEL_PAUSED}}` | person{{PAUSE_SETTER}} | On one open issue titled `Loop paused`: while any open issue carries it, the builder takes no new work and merges nothing, and the reviewer starts no new review. Rounds in flight finish. |
 
 `{{LABEL_PASSED}}` and `{{LABEL_CHANGES}}` are mutually exclusive. A reviewer sets **at
 most** one of them and removes `{{LABEL_WAITING}}` with whichever it sets. *At most*, not
@@ -37,6 +87,14 @@ pick a label anyway, which is a pass over an unread diff.
 Claims: {{CLAIMED_RULE}}
 
 {{BLOCKED_RULE}}
+
+**Pauses are labels, never memories.** "Stop after #N" or "stop for the night" held in a
+session's memory ends when the session restarts — usually when nobody is watching — and the
+next morning starts with a question instead of the work. Pause the whole loop by opening one
+issue titled `Loop paused`, labelled `{{LABEL_PAUSED}}`, with the reason in its body; resume
+by closing it. {{HOLD_RULE}} A round already running when a hold or pause lands finishes and
+may still label `{{LABEL_PASSED}}`: the merge check refuses it anyway, and a round that stops
+half-way leaves worse state than one that finishes.
 
 ## State table
 
@@ -83,7 +141,56 @@ last tick:
 
 {{MERGER_SENTENCE}} A failed check is a refusal, never a merge on the label alone. A merge
 GitHub refuses stops there and says so — no retry with different flags, no `--admin`, no
-conflict resolution, never `git push origin HEAD:{{BASE_BRANCH}}`.
+conflict resolution, never `git push origin HEAD:{{BASE_BRANCH}}`. No PR merges while a
+`Loop paused` issue is open.
+
+**A merge approval is never relayed.** Where the session's permission mode refuses the merge
+verb until the person approves it, the approval is the person's own words in the merging
+session. A session that passes "merge #N" on from the person is making a permission decision
+it cannot make, however faithfully it quotes them.
+
+## What a PR is judged against
+
+1. **The issue, as it stands now** — its "done when" list and every decision note on it.
+2. **The outcome**, in `{{OUTCOME_PATH}}`: the person's own paragraph on what the project is
+   for. Only the person edits it. A finding against the outcome is legitimate even when the
+   issue is satisfied. A file still marked as a draft is not the person's yet; nothing is
+   judged against it or proposed from it.
+3. **The lenses**, in `{{LENSES_PATH}}`: the checks this project's experts would run, and the
+   evidence each accepts. Without the file, the reviewer checks correctness and the person
+   who uses it.
+
+**"Done" is a check, not a claim.** Before writing code for an issue, the builder writes the
+check that fails until the issue's "done when" holds — a test where the project has tests,
+otherwise a script that drives the project through its own hooks — and commits it under
+`{{CHECKS_DIR}}/` in the same PR. `{{TEST_CMD}}` runs everything there; the first PR to add a
+check wires that in if it is not already. A check that lives only in a session's scratchpad
+proves the issue once and then nobody owns it: in the loop that found this, a later slice
+broke an earlier slice's check and nothing noticed, because the check was never committed.
+
+A **feature** PR's body says, in one sentence, which line of the outcome it serves. A bug fix
+does not need one; the sentence turns into boilerplate there.
+
+## Findings
+
+Every finding is one of three kinds, and the comment names which:
+
+- **Finding** — something wrong with this PR, carrying its evidence: a measurement, a
+  reproduction, or a failing check. "This feels slow" is an opinion two agents can trade
+  forever; "3.8 s from pickup at 740×360" ends the argument or starts the fix. Findings
+  block the pass. Each names the lens it came from.
+- **Question** — a concern without evidence yet. It does not block the pass unless its
+  answer is the person's to give, in which case the PR gets `{{LABEL_CHANGES}}` and the
+  question goes to the person as a decision (above).
+- **Follow-up** — real, evidenced, and not this PR's to fix: a leftover on another screen
+  size, a bug already on `{{BASE_BRANCH}}`. It does not block the pass. {{FOLLOWUP_FILER}}
+  files each one as an issue with the evidence and a link back to the comment, so it does
+  not die in a merged PR's comments — which is where the first loop's follow-ups went.
+
+**A broken test environment is not a finding.** A missing browser, an expired login, a dead
+toolchain: the session that hits it says so once to the person{{ENV_COORDINATOR}}, names what
+it could not check, and carries on with what it can. It slows every round until someone
+fixes it, and no round owns it.
 
 ## Builder
 
@@ -131,6 +238,12 @@ the child left the reviewer's queue when its pass was set.
   branch. The two real repairs are decisions, not edits: drop the push glob and let every
   push prompt, or add a `PreToolUse` hook that refuses pushes to `{{BASE_BRANCH}}`. Branch
   protection on the remote is the third and the only one enforced off this machine.
+- **Session names are trusted, not verified.** Any session renamed to one of the exact names
+  above can send pointers. The safeguard is that a pointer only says where to look; what a
+  session acts on is what GitHub says.
+- **Watches expire.** The `Monitor` behind each command can end — in this harness, after
+  about thirty minutes — and nothing announces it. Each command says how to re-arm, and a
+  stopped watch still looks exactly like an empty queue.
 - **The loop converges; it does not decide.** Nothing here can mechanise "this feature is
   good enough." A third hand-back is where a person comes in.
 - **Merging is not deploying.** The last state here is *merged* — that lands code, it does
