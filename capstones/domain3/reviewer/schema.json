@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "findings": {
+      "type": "array",
+      "description": "One entry per distinct defect found in the diff. Empty array if the diff is clean.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "high = a correctness or security defect that can cause data loss, financial loss, a crash, or a security hole in production (e.g. missing authorization check, unchecked balance leading to overdraft, SQL injection, nil/null dereference on a reachable path). medium = a real bug with limited blast radius or an unhandled edge case. low = style, naming, or a nit with no runtime impact."
+          },
+          "file": { "type": "string" },
+          "line": { "type": "integer", "description": "Best-effort line number in the new file; 0 if unknown." },
+          "issue": { "type": "string", "description": "What is wrong, in one sentence." },
+          "recommendation": { "type": "string", "description": "The concrete fix, in one sentence." }
+        },
+        "required": ["severity", "issue", "recommendation"]
+      }
+    }
+  },
+  "required": ["findings"]
+}
